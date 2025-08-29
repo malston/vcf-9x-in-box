@@ -12,9 +12,13 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * [Build of Materials (BOM)](#build-of-materials-bom)
 * [Pre-Requisite](#prereq)
 * [Installation](#installation)
+* [Post Installation](#post-installation)
 * [Blog References](#blog-references)
 
 ## Changelog
+
+* **08/29/2025**
+  * Added post-install documentation section
 
 * **07/28/2025**
   * Initial Release
@@ -225,6 +229,15 @@ The script will wait until vCenter Server is available and once the vSAN Storage
 You can login to your brand new VCF 9.0 deployment by clicking on the link to login to VCF Operations and `admin` credentials you had specified in your deployment manifest.
 
 ![](screenshots/screenshot-15.png)
+
+## Post Installation
+
+Now that you have a fully functional VCF 9 Fleet fully deployed, here are some things you may want to explore and try out:
+
+* 🌐 [Configuring vSphere Supervisor with NSX VPC Networking](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vsphere-supervisor-with-nsx-vpc-networking.html)
+* 📦 [Configuring vSphere Kubernetes Service (VKS)](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vsphere-kubernetes-service-vks.html)
+* ⚙️ [Configuring VCF Automation](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vcf-automation.html)
+* 🔐 [Configuring External IdP for Multiple VCF Automation Organizations](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-external-idp-for-multiple-vcf-automation-organizations.html)
 
 ## Blog References
 

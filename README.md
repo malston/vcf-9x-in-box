@@ -17,6 +17,9 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
+* **10/01/25**
+  * Updated MS-A2 7945HX to 7940HX
+
 * **08/29/2025**
   * Added post-install documentation section
 
@@ -27,7 +30,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Build of Materials (BOM)
 
  * [VMware Cloud Foundation (VCF) 9.0.0.0](https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Cloud%20Foundation&displayGroup=VMware%20Cloud%20Foundation%209&release=9.0.0.0&os=&servicePk=&language=EN)
- * [2 x Minisforum MS-A2 (7945HX) Barebones](https://amzn.to/4kEnAP5)
+ * [2 x Minisforum MS-A2 (7940HX) Barebones](https://amzn.to/46xuK3X)
     * [1 x Crucial 128GB Kit (2x64GB) DDR5 SODIMM](https://amzn.to/4bcpXFJ)
     * [2 x Dual 64GB DDR5 SODIMM (128GB)](https://amzn.to/4bcpXFJ)
     * 1 x USB Device (16GB or larger) for booting ESXi Installation

@@ -17,6 +17,9 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
+* **10/04/25**
+  * Add TPS Memory optimization to Kickstart
+
 * **10/01/25**
   * Updated MS-A2 7945HX to 7940HX
 

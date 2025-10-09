@@ -9,20 +9,66 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Table of Contents
 
 * [Changelog](#changelog)
+* [Quick Start](#quick-start)
+* [Minimum Resources](#minimum-resources)
 * [Build of Materials (BOM)](#build-of-materials-bom)
 * [Pre-Requisite](#prereq)
+* [Configuration Files](#configuration-files)
+* [Automation Scripts](#automation-scripts)
+* [Script Prerequisites](#script-prerequisites)
 * [Installation](#installation)
 * [Post Installation](#post-installation)
+* [Troubleshooting](#troubleshooting)
 * [Blog References](#blog-references)
 
 ## Changelog
 
-* **08/29/2025**
+* **08/29/2024**
   * Added post-install documentation section
 
-* **07/28/2025**
+* **07/28/2024**
   * Initial Release
 
+## Quick Start
+
+1. Prepare hardware (2x MS-A2 or similar with specs below)
+2. Configure network (5 VLANs: 30, 40, 50, 60, 70)
+3. Setup VCF Offline Depot on HTTP server
+4. Create ESXi USB installer with kickstart config
+5. Deploy ESXi on both hosts
+6. Deploy VCF Installer with `deploy_vcf_installer.sh`
+7. Configure VCF Installer with `setup_vcf_installer.ps1`
+8. Connect to Offline Depot and download binaries
+9. Upload VCF deployment manifest and start deployment
+10. Run `fix_vsan_esa_default_storage_policy.ps1` during deployment (for single/dual host setups)
+
+**Total deployment time:** 3-4 hours
+
+## Minimum Resources
+
+### Per ESXi Host
+
+* **CPU:** 16C/32T minimum (AMD Ryzen 9 7945HX or Intel equivalent)
+* **RAM:** 128GB minimum
+* **Storage:**
+  * 500GB NVMe for ESXi OS, ESX-OSData & Local VMFS
+  * 1-2TB NVMe for vSAN ESA
+  * Optional: 1TB NVMe for NVMe Tiering
+* **Network:** 2x 10GbE ports (SFP+ or RJ45)
+
+### Network Infrastructure
+
+* **Switch:** 10GbE switch with VLAN support
+* **VLANs:** Minimum 5 VLANs configured (Management, vMotion, vSAN, TEP, Tier-0)
+* **Router:** Optional for external connectivity
+
+### Software Requirements
+
+* VMware Cloud Foundation 9.0.0.0 binaries
+* ESXi 9.0 installer ISO
+* vCenter Server 9.0 ISO
+* NSX-T 9.0 components
+* VCF Operations components
 
 ## Build of Materials (BOM)
 
@@ -39,6 +85,67 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 📒 The above BOM is just [one working example](https://williamlam.com/2025/07/vcf-9-0-hardware-bom-for-silicon-valley-vmug.html), you can certainly swap out components that you might already have or prefer alternatives, just know that you will be responsible for adjusting any configuration that may differ from referenced BOM.
 
+## Configuration Files
+
+The following configuration files are included in the `config/` directory:
+
+| File | Purpose |
+|------|---------|
+| [`ks-esx01.cfg`](config/ks-esx01.cfg) | ESXi kickstart configuration for first physical host |
+| [`ks-esx02.cfg`](config/ks-esx02.cfg) | ESXi kickstart configuration for second physical host |
+| [`vcf90-two-node.json`](config/vcf90-two-node.json) | VCF deployment manifest for two-node fleet |
+| [`unbound.conf`](config/unbound.conf) | DNS server configuration (optional - for local DNS setup) |
+
+## Automation Scripts
+
+The following automation scripts are provided in the `scripts/` directory:
+
+| Script | Purpose | Prerequisites |
+|--------|---------|---------------|
+| [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) | Deploy VCF Installer appliance via OVFTool | OVFTool, ESXi with SSH enabled |
+| [`setup_vcf_installer.ps1`](scripts/setup_vcf_installer.ps1) | Configure VCF Installer post-deployment settings | PowerShell 7+, VMware.PowerCLI module |
+| [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) | Auto-fix vSAN ESA storage policy for single/dual host deployments | PowerCLI, vCenter Server access |
+
+## Script Prerequisites
+
+### deploy_vcf_installer.sh
+
+**Local System Requirements:**
+* **OVFTool:** Download and install from [Broadcom Developer Portal](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest)
+* **VCF Installer OVA:** Downloaded from VCF 9.0 binaries
+
+**ESXi Host Requirements:**
+* SSH enabled on target ESXi host
+* Root credentials
+* Network port group: `VM Network` (or customize in script)
+* Datastore with 15-20GB free space (e.g., `local-vmfs-datastore-1`)
+
+**Before Running:**
+Edit variables in the script (lines 19-35):
+* ESXi host IP, username, password
+* VCF Installer networking (IP, gateway, DNS, NTP)
+* Datastore and network port group names
+* Root and admin passwords
+
+### setup_vcf_installer.ps1
+
+**Requirements:**
+* PowerShell 7 or later
+* VMware PowerCLI module: `Install-Module -Name VMware.PowerCLI`
+* Network access to VCF Installer appliance
+* VCF Installer admin credentials
+
+### fix_vsan_esa_default_storage_policy.ps1
+
+**Requirements:**
+* PowerShell 7 or later
+* VMware PowerCLI module installed
+* vCenter Server credentials (configured in VCF deployment)
+* Network access to vCenter Server
+
+**When to Run:**
+For single or dual-host deployments, run this script **proactively** during VCF deployment to prevent vSAN storage policy failures.
+
 ## Prereq
 
 * Minimum 5 VLANs (e.g. 30, 40, 50, 60) for VCF Fleet Deployment
@@ -53,8 +160,8 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 | Hostname   | FQDN                | IP Address  | Function                                 |
 |------------|---------------------|-------------|------------------------------------------|
 | dns        | dns.vcf.lab         | 172.30.0.2  | DNS Server                               |
-| esx01      | esx01.vcf.lab       | 172.30.0.110| Physical ESX-1 Server                    |
-| esx02      | esx02.vcf.lab       | 172.30.0.120| Physical ESX-2 Server                    |
+| esx01      | esx01.vcf.lab       | 172.30.0.10 | Physical ESX-1 Server                    |
+| esx02      | esx02.vcf.lab       | 172.30.0.11 | Physical ESX-2 Server                    |
 | sddcm01    | sddcm01.vcf.lab     | 172.30.0.12 | VCF Installer / SDDC Manager             |
 | vc01       | vc01.vcf.lab        | 172.30.0.13 | vCenter Server for Management Domain     |
 | vcf01      | vcf01.vcf.lab       | 172.30.0.14 | VCF Operations                           |
@@ -64,7 +171,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 | edge01b    | edge01b.vcf.lab     | 172.30.0.18 | NSX Edge 1b for Management Domain        |
 | opsfm01    | opsfm01.vcf.lab     | 172.30.0.19 | VCF Operations Fleet Manager             |
 | opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20 | VCF Operations Proxy Collector           |
-| auto01     | auto01.vcf.lab      | 173.30.0.30 | VCF Automation                           |
+| auto01     | auto01.vcf.lab      | 172.30.0.30 | VCF Automation                           |
 
 ## Installation
 
@@ -117,7 +224,9 @@ You can host the VCF Offline Depot using a traditional HTTP Web Server (HTTPS is
 
 3. We will be performing a scripted installation of ESXi (aka ESXi Kickstart) to remove the number of manual steps that would be needed during the post-installation of ESXi.
 
-4. Edit the [ks-esx01.cfg](config/ks-esx01.cfg)/[ks-esx02.cfg](config/ks-esx02.cfg) and replace the following values with your own desired configurations
+4. Edit the ESXi kickstart configuration files and replace the following values with your own desired configurations:
+   * [`config/ks-esx01.cfg`](config/ks-esx01.cfg) for first physical host
+   * [`config/ks-esx02.cfg`](config/ks-esx02.cfg) for second physical host
 
 💡 To simplify the deployment of multiple ESXi hosts using a single USB drive, you can [create custom UEFI boot menu for ESXi](https://williamlam.com/2025/07/custom-uefi-boot-menu-for-esxi-9-0-using-refind.html), allowing you to select specific ESXi Kickstart configuration files.
 
@@ -170,7 +279,27 @@ EOF
 
 📒 If you are going to run a local DNS Server on the ESXi hosts that will deploy VCF 9.0, you should specify the final DNS Server IP Address and DNS Domain when provisioning your ESXi hosts. This will ensure that everything will resolve once you deploy your DNS Server, which will happen _after_ your ESXi hosts have been provisioned and removes and additional step by needing to update the DNS information.
 
-8. Deploy the VCF Installer appliance (VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova) by using following shell script [deploy_vcf_installer.sh](scripts/deploy_vcf_installer.sh) which relies on [OVFTool](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest) and install if you do already have it on your local system.
+8. Deploy the VCF Installer appliance using the [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) script.
+
+   **Prerequisites:**
+   * OVFTool installed (download from [Broadcom Developer Portal](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest))
+   * VCF Installer OVA downloaded to your local system
+
+   **Before running:**
+   Edit the script variables (lines 19-35) to match your environment:
+   * ESXi host IP address, username, password
+   * VCF Installer networking configuration (IP, gateway, DNS, NTP)
+   * Datastore and network port group names
+   * Root and admin passwords
+
+   **Run the script:**
+   ```bash
+   cd scripts
+   chmod +x deploy_vcf_installer.sh
+   ./deploy_vcf_installer.sh
+   ```
+
+   The script will deploy the VCF Installer appliance and wait for it to power on.
 
 ![](screenshots/screenshot-4.png)
 
@@ -207,21 +336,29 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
 
 ![](screenshots/screenshot-11.png)
 
-12. If you only have a single or dual physical ESXi host for your VCF 9 setup, you will find that after the vCenter Server Appliance (VCSA) is deployed, the deployment will fail due to inablity to apply the default vSAN ESA Storage Policy. The fix is quite simple and requires logging into vCenter Server and updating the storagey policy.
+12. **[IMPORTANT - Single/Dual Host Deployments]** Fix vSAN ESA Storage Policy proactively to prevent deployment failure.
 
-Rather than waiting for the expected failure, I have created the following PowerCLI script that will simply wait for vCenter Server to be up and running and then once the vSAN ESA Storage Policy has been created, it will automatically update the policy for you.
+   **Background:** For single or dual physical ESXi host deployments, the VCF deployment will fail after vCenter Server is deployed due to inability to apply the default vSAN ESA Storage Policy (which requires 3 hosts by default).
 
+   **Proactive Fix:** Run the [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) script **immediately after starting the VCF deployment** (Step 11). This script monitors vCenter Server deployment and automatically updates the vSAN storage policy when created, preventing deployment failure.
 
+   **Run the script:**
+   ```powershell
+   cd scripts
+   ./fix_vsan_esa_default_storage_policy.ps1
+   ```
 
-```console
-./fix_vsan_esa_default_storage_policy.ps1
-```
+   ![](screenshots/screenshot-12.png)
 
-![](screenshots/screenshot-12.png)
+   The script will:
+   * Wait until vCenter Server is available
+   * Monitor for vSAN ESA Storage Policy creation
+   * Automatically update the policy to support single/dual host configurations
+   * Prevent deployment failure that would require manual remediation
 
-The script will wait until vCenter Server is available and once the vSAN Storage Policy is available, it will automatically update it and hopefully preventing the expected failure in VCF Installer which would then require a manual remediation and restarting the deployment.
+   ![](screenshots/screenshot-13.png)
 
-![](screenshots/screenshot-13.png)
+   **Note:** This step is **only required** for single or dual-host deployments. Three or more host deployments do not need this fix.
 
 13. The deployment will take a few hours and once everything has been deployed, you should see a success page like the following:
 
@@ -240,6 +377,60 @@ Now that you have a fully functional VCF 9 Fleet fully deployed, here are some t
 * 📦 [Configuring vSphere Kubernetes Service (VKS)](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vsphere-kubernetes-service-vks.html)
 * ⚙️ [Configuring VCF Automation](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vcf-automation.html)
 * 🔐 [Configuring External IdP for Multiple VCF Automation Organizations](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-external-idp-for-multiple-vcf-automation-organizations.html)
+
+## Troubleshooting
+
+### ESXi Installation Issues
+
+**Problem:** Cannot identify NVMe device labels for kickstart configuration
+* **Solution:** Boot ESXi installer, press ALT+F1, login as root (blank password), run `/etc/init.d/SSH start`, then SSH to the host and run `vdq -q` to list all storage devices
+
+**Problem:** ESXi kickstart installation fails to boot
+* **Solution:** Verify `BOOT.CFG` has been edited correctly with `kernelopt=ks=usb:/KS.CFG` and that the KS.CFG file is in the root of the USB device
+
+**Problem:** Wrong ESXi host gets wrong configuration
+* **Solution:** Consider renaming kickstart files to `KS1.CFG` and `KS2.CFG` and creating custom UEFI boot menu (see [this blog post](https://williamlam.com/2025/07/custom-uefi-boot-menu-for-esxi-9-0-using-refind.html))
+
+### VCF Installer Deployment Issues
+
+**Problem:** OVFTool fails with authentication error
+* **Solution:** Verify SSH is enabled on ESXi host and credentials are correct in the script
+
+**Problem:** OVFTool fails with network/datastore not found error
+* **Solution:** Verify port group name (e.g., `VM Network`) and datastore name (e.g., `local-vmfs-datastore-1`) match exactly in the script
+
+**Problem:** VCF Installer appliance doesn't get IP address
+* **Solution:** Check network configuration in script (IP, gateway, subnet mask) and verify VLAN configuration on physical switch
+
+### VCF Deployment Issues
+
+**Problem:** Pre-check validation fails for MTU/Jumbo Frames
+* **Solution:** If using MikroTik devices, this is a known issue. Acknowledge the warning if you've confirmed Jumbo Frames are configured correctly
+
+**Problem:** vSAN ESA Storage Policy error on single/dual host deployment
+* **Solution:** Run `fix_vsan_esa_default_storage_policy.ps1` script immediately after starting VCF deployment (see Step 12)
+
+**Problem:** VCF Offline Depot connection fails
+* **Solution:** Verify HTTP server is running, firewall allows traffic, and the depot URL is correct. HTTPS is not required for VCF 9.0
+
+**Problem:** Binary download fails from Offline Depot
+* **Solution:** Verify all binaries are in the correct directory structure and the HTTP server has read permissions
+
+### DNS Issues
+
+**Problem:** Hostnames not resolving during deployment
+* **Solution:** Verify DNS server is running and reachable, all required DNS entries are configured, and ESXi hosts have correct DNS settings
+
+**Problem:** DNS server not accessible after deployment
+* **Solution:** If running DNS on ESXi host, verify the VM is powered on and the DNS service (unbound) is running
+
+### Network Issues
+
+**Problem:** VLANs not working correctly
+* **Solution:** Verify VLAN IDs are configured on physical switch, trunk ports are configured correctly, and VLANs match between physical switch and VCF deployment manifest
+
+**Problem:** 10GbE connectivity issues
+* **Solution:** Verify SFP+ cables/transceivers are compatible, ports are enabled on switch, and link lights are active on both ends
 
 ## Blog References
 

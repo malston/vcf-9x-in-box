@@ -2,7 +2,7 @@
 # Author: William Lam
 
 OVFTOOL="/Applications/VMware OVF Tool/ovftool"
-VCF_INSTALLER_OVA="/Volumes/Storage/Software/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+VCF_INSTALLER_OVA="/Users/markalston/Storage/Software/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
 
 # Check if ovftool exists and is executable
 if [[ ! -x "$OVFTOOL" ]]; then
@@ -16,7 +16,7 @@ if [[ ! -f "$VCF_INSTALLER_OVA" ]]; then
     exit 1
 fi
 
-ESXI_HOST="172.30.0.110"
+ESXI_HOST="172.30.0.10"
 ESXI_USERNAME="root"
 ESXI_PASSWORD="VMware1!"
 VM_NETWORK="VM Network"

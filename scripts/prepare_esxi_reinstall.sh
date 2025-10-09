@@ -12,7 +12,6 @@ NC='\033[0m' # No Color
 
 # Configuration Variables - CUSTOMIZE THESE
 ESXI_ISO_PATH="$HOME/Storage/Software/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
-USB_MOUNT_POINT="/Volumes/ESXi"  # Will be auto-detected if left empty
 WORKING_DIR="./esxi-reinstall-temp"
 
 # Network Configuration for New Setup
@@ -21,7 +20,7 @@ NEW_GATEWAY="172.30.0.1"
 NEW_VLAN="30"
 NEW_DNS="172.30.0.2"  # Update this if using different DNS
 NEW_DOMAIN="vcf.lab"
-NTP_SERVER="104.167.215.195"
+NTP_SERVER="pool.ntp.org"
 
 # ESXi Host 1 Configuration
 ESX01_IP="172.30.0.10"
@@ -36,11 +35,11 @@ ROOT_PASSWORD="VMware1!"
 
 # NVMe Device Identifiers - MUST BE CUSTOMIZED FOR YOUR HARDWARE
 # Run 'vdq -q' on ESXi console to find these values
-ESX01_INSTALL_DISK="eui.0000000001000000e4d25cb224ab5001"  # Boot/Install disk for ESX01
-ESX02_INSTALL_DISK="t10.NVMe____SHGP312D500GM____________________________73F2E126002EE4AC"  # Boot/Install disk for ESX02
+ESX01_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________7F17A051D3382500"  # Boot/Install disk for ESX01
+ESX02_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________9E17A051D3382500"  # Boot/Install disk for ESX02
 
-ESX01_TIERING_DISK="t10.NVMe____Samsung_SSD_980_1TB_____________________183A5011D2382500"  # NVMe Tiering disk for ESX01
-ESX02_TIERING_DISK="t10.NVMe____Sabrent_Rocket_4.0_1TB__________________0D0A202059A77964"  # NVMe Tiering disk for ESX02
+ESX01_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500"  # NVMe Tiering disk for ESX01
+ESX02_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________84A9415145382500"  # NVMe Tiering disk for ESX02
 
 # SSH Public Key (optional - leave empty if not using)
 SSH_ROOT_KEY=""

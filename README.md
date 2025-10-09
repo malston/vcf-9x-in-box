@@ -23,10 +23,10 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
-* **08/29/2024**
+* **08/29/2025**
   * Added post-install documentation section
 
-* **07/28/2024**
+* **07/28/2025**
   * Initial Release
 
 ## Quick Start
@@ -72,16 +72,16 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Build of Materials (BOM)
 
- * [VMware Cloud Foundation (VCF) 9.0.0.0](https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Cloud%20Foundation&displayGroup=VMware%20Cloud%20Foundation%209&release=9.0.0.0&os=&servicePk=&language=EN)
- * [2 x Minisforum MS-A2 (7945HX) Barebones](https://amzn.to/4kEnAP5)
-    * [1 x Crucial 128GB Kit (2x64GB) DDR5 SODIMM](https://amzn.to/4bcpXFJ)
-    * [2 x Dual 64GB DDR5 SODIMM (128GB)](https://amzn.to/4bcpXFJ)
-    * 1 x USB Device (16GB or larger) for booting ESXi Installation
-    * [2 x SK Hynix Gold P31 500GB NVME](https://amzn.to/4eKEQkm) for ESXi Installation, ESX-OSData & Local VMFS datastore
-    * [2 x Sabrent Rocket 1TB NVMe](https://amzn.to/4ltaTYM) for NVMe Tiering
-    * [2 x Samsung 990 EVO 2TB NVMe](https://amzn.to/4lQC403) for vSAN ESA
-    * [1 x MikroTik CRS304-4XG-IN](https://amzn.to/44J1rt4) for Network Routing
-    * [1 x Sodola 4 x 2.5GbE & 2 x 10GbE](https://amzn.to/4lQjZOw) for Network Switching
+* [VMware Cloud Foundation (VCF) 9.0.0.0](https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Cloud%20Foundation&displayGroup=VMware%20Cloud%20Foundation%209&release=9.0.0.0&os=&servicePk=&language=EN)
+* [2 x Minisforum MS-A2 (7945HX) Barebones](https://amzn.to/4kEnAP5)
+  * [1 x Crucial 128GB Kit (2x64GB) DDR5 SODIMM](https://amzn.to/4bcpXFJ)
+  * [2 x Dual 64GB DDR5 SODIMM (128GB)](https://amzn.to/4bcpXFJ)
+  * 1 x USB Device (16GB or larger) for booting ESXi Installation
+  * [2 x SK Hynix Gold P31 500GB NVME](https://amzn.to/4eKEQkm) for ESXi Installation, ESX-OSData & Local VMFS datastore
+  * [2 x Sabrent Rocket 1TB NVMe](https://amzn.to/4ltaTYM) for NVMe Tiering
+  * [2 x Samsung 990 EVO 2TB NVMe](https://amzn.to/4lQC403) for vSAN ESA
+  * [1 x MikroTik CRS304-4XG-IN](https://amzn.to/44J1rt4) for Network Routing
+  * [1 x Sodola 4 x 2.5GbE & 2 x 10GbE](https://amzn.to/4lQjZOw) for Network Switching
 
 📒 The above BOM is just [one working example](https://williamlam.com/2025/07/vcf-9-0-hardware-bom-for-silicon-valley-vmug.html), you can certainly swap out components that you might already have or prefer alternatives, just know that you will be responsible for adjusting any configuration that may differ from referenced BOM.
 
@@ -111,10 +111,12 @@ The following automation scripts are provided in the `scripts/` directory:
 ### deploy_vcf_installer.sh
 
 **Local System Requirements:**
+
 * **OVFTool:** Download and install from [Broadcom Developer Portal](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest)
 * **VCF Installer OVA:** Downloaded from VCF 9.0 binaries
 
 **ESXi Host Requirements:**
+
 * SSH enabled on target ESXi host
 * Root credentials
 * Network port group: `VM Network` (or customize in script)
@@ -122,6 +124,7 @@ The following automation scripts are provided in the `scripts/` directory:
 
 **Before Running:**
 Edit variables in the script (lines 19-35):
+
 * ESXi host IP, username, password
 * VCF Installer networking (IP, gateway, DNS, NTP)
 * Datastore and network port group names
@@ -130,6 +133,7 @@ Edit variables in the script (lines 19-35):
 ### setup_vcf_installer.ps1
 
 **Requirements:**
+
 * PowerShell 7 or later
 * VMware PowerCLI module: `Install-Module -Name VMware.PowerCLI`
 * Network access to VCF Installer appliance
@@ -138,6 +142,7 @@ Edit variables in the script (lines 19-35):
 ### fix_vsan_esa_default_storage_policy.ps1
 
 **Requirements:**
+
 * PowerShell 7 or later
 * VMware PowerCLI module installed
 * vCenter Server credentials (configured in VCF deployment)
@@ -149,11 +154,11 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 ## Prereq
 
 * Minimum 5 VLANs (e.g. 30, 40, 50, 60) for VCF Fleet Deployment
-    * VLAN 30 - Management
-    * VLAN 40 - vMotion
-    * VLAN 50 - vSAN
-    * VLAN 60 - ESX/NSX Edge TEP
-    * VLAN 70 - Tier 0 Uplink (Optional)
+  * VLAN 30 - Management
+  * VLAN 40 - vMotion
+  * VLAN 50 - vSAN
+  * VLAN 60 - ESX/NSX Edge TEP
+  * VLAN 70 - Tier 0 Uplink (Optional)
 
 * Here are the following IP Addresses/DNS entries that you will need for initial setup (NSX Edge, Supervisor/VKS are optional)
 
@@ -180,6 +185,7 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 1. Setup a VCF Offline Depot using the new `VCF Download Tool` by following the [Broadcom doumentation](https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/deployment/deploying-a-new-vmware-cloud-foundation-or-vmware-vsphere-foundation-private-cloud-/preparing-your-environment/downloading-binaries-to-the-vcf-installer-appliance/download-install-binaries-to-an-offline-depot.html)
 
 After downloading the required metadata/binaries, you should have a directory structure like the following:
+
 ```
  PROD
     ├── COMP
@@ -293,6 +299,7 @@ EOF
    * Root and admin passwords
 
    **Run the script:**
+
    ```bash
    cd scripts
    chmod +x deploy_vcf_installer.sh
@@ -303,14 +310,13 @@ EOF
 
 ![](screenshots/screenshot-4.png)
 
-
 9. After the VCF Installer is up and running, we will need to make a few configuration changes, which I have automated and you can simply run by using the following PowerShell script [setup_vcf_installer.ps1](scripts/setup_vcf_installer.ps1)
 
 ![](screenshots/screenshot-5.png)
 
 10. Before we can deploy our VCF 9 envrionment, we need to connect to our VCF Offline Depot that you had setup from Step 1.
 
-Open browser to VCF Installer (e.g. https://sddcm01.vcf.lab/) and login with username `admin@local` and the password you had configured from Step 8 and then click on `DEPOT SETTINGS AND BINARY MANAGEMENT` button.
+Open browser to VCF Installer (e.g. <https://sddcm01.vcf.lab/>) and login with username `admin@local` and the password you had configured from Step 8 and then click on `DEPOT SETTINGS AND BINARY MANAGEMENT` button.
 
 ![](screenshots/screenshot-6.png)
 
@@ -343,6 +349,7 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
    **Proactive Fix:** Run the [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) script **immediately after starting the VCF deployment** (Step 11). This script monitors vCenter Server deployment and automatically updates the vSAN storage policy when created, preventing deployment failure.
 
    **Run the script:**
+
    ```powershell
    cd scripts
    ./fix_vsan_esa_default_storage_policy.ps1
@@ -351,10 +358,11 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
    ![](screenshots/screenshot-12.png)
 
    The script will:
-   * Wait until vCenter Server is available
-   * Monitor for vSAN ESA Storage Policy creation
-   * Automatically update the policy to support single/dual host configurations
-   * Prevent deployment failure that would require manual remediation
+
+* Wait until vCenter Server is available
+* Monitor for vSAN ESA Storage Policy creation
+* Automatically update the policy to support single/dual host configurations
+* Prevent deployment failure that would require manual remediation
 
    ![](screenshots/screenshot-13.png)
 
@@ -383,53 +391,67 @@ Now that you have a fully functional VCF 9 Fleet fully deployed, here are some t
 ### ESXi Installation Issues
 
 **Problem:** Cannot identify NVMe device labels for kickstart configuration
+
 * **Solution:** Boot ESXi installer, press ALT+F1, login as root (blank password), run `/etc/init.d/SSH start`, then SSH to the host and run `vdq -q` to list all storage devices
 
 **Problem:** ESXi kickstart installation fails to boot
+
 * **Solution:** Verify `BOOT.CFG` has been edited correctly with `kernelopt=ks=usb:/KS.CFG` and that the KS.CFG file is in the root of the USB device
 
 **Problem:** Wrong ESXi host gets wrong configuration
+
 * **Solution:** Consider renaming kickstart files to `KS1.CFG` and `KS2.CFG` and creating custom UEFI boot menu (see [this blog post](https://williamlam.com/2025/07/custom-uefi-boot-menu-for-esxi-9-0-using-refind.html))
 
 ### VCF Installer Deployment Issues
 
 **Problem:** OVFTool fails with authentication error
+
 * **Solution:** Verify SSH is enabled on ESXi host and credentials are correct in the script
 
 **Problem:** OVFTool fails with network/datastore not found error
+
 * **Solution:** Verify port group name (e.g., `VM Network`) and datastore name (e.g., `local-vmfs-datastore-1`) match exactly in the script
 
 **Problem:** VCF Installer appliance doesn't get IP address
+
 * **Solution:** Check network configuration in script (IP, gateway, subnet mask) and verify VLAN configuration on physical switch
 
 ### VCF Deployment Issues
 
 **Problem:** Pre-check validation fails for MTU/Jumbo Frames
+
 * **Solution:** If using MikroTik devices, this is a known issue. Acknowledge the warning if you've confirmed Jumbo Frames are configured correctly
 
 **Problem:** vSAN ESA Storage Policy error on single/dual host deployment
+
 * **Solution:** Run `fix_vsan_esa_default_storage_policy.ps1` script immediately after starting VCF deployment (see Step 12)
 
 **Problem:** VCF Offline Depot connection fails
+
 * **Solution:** Verify HTTP server is running, firewall allows traffic, and the depot URL is correct. HTTPS is not required for VCF 9.0
 
 **Problem:** Binary download fails from Offline Depot
+
 * **Solution:** Verify all binaries are in the correct directory structure and the HTTP server has read permissions
 
 ### DNS Issues
 
 **Problem:** Hostnames not resolving during deployment
+
 * **Solution:** Verify DNS server is running and reachable, all required DNS entries are configured, and ESXi hosts have correct DNS settings
 
 **Problem:** DNS server not accessible after deployment
+
 * **Solution:** If running DNS on ESXi host, verify the VM is powered on and the DNS service (unbound) is running
 
 ### Network Issues
 
 **Problem:** VLANs not working correctly
+
 * **Solution:** Verify VLAN IDs are configured on physical switch, trunk ports are configured correctly, and VLANs match between physical switch and VCF deployment manifest
 
 **Problem:** 10GbE connectivity issues
+
 * **Solution:** Verify SFP+ cables/transceivers are compatible, ports are enabled on switch, and link lights are active on both ends
 
 ## Blog References

@@ -1,0 +1,140 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ESXi Installation Working Directory
+esxi-reinstall-temp/
+scripts/esxi-reinstall-temp/
+
+# ISO Files (too large for git)
+*.iso
+
+# OVA/OVF Files (too large for git)
+*.ova
+*.ovf
+*.vmdk
+
+# VCF Offline Depot (too large for git)
+PROD/
+depot/
+offline-depot/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~.nib
+
+# VMware specific
+*.vmx
+*.vmxf
+*.nvram
+*.vmsd
+*.vmsn
+
+# Sensitive files
+*.key
+*.pem
+*.crt
+id_rsa
+id_rsa.pub
+*.credentials
+
+# Secrets and passwords (be careful with kickstart configs!)
+*password*
+*secret*
+credentials.json
+.env
+.env.local
+
+# IDE/Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.vim/
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Compiled files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Package files
+*.7z
+*.dmg
+*.gz
+*.jar
+*.rar
+*.tar
+*.zip
+
+# VCF binaries and large downloads
+*.vlcp
+VMware-*.iso
+VMware-*.ova
+nsx-*.ova
+Operations-*.ova
+vmsp-*.tar
+VCF-*.ova

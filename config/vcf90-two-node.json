@@ -24,7 +24,7 @@
     },
     "dnsSpec": {
         "nameservers": [
-            "192.168.2.1"
+            "172.30.0.2"
         ],
         "subdomain": "vcf.lab"
     },

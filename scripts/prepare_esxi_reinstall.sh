@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration Variables - CUSTOMIZE THESE
-ESXI_ISO_PATH="/Users/markalston/Storage/Software/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+ESXI_ISO_PATH="$HOME/Storage/Software/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
 USB_MOUNT_POINT="/Volumes/ESXi"  # Will be auto-detected if left empty
 WORKING_DIR="./esxi-reinstall-temp"
 

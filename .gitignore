@@ -138,3 +138,7 @@ nsx-*.ova
 Operations-*.ova
 vmsp-*.tar
 VCF-*.ova
+
+# AI files
+.serena/
+.claude/

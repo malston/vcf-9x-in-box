@@ -9,6 +9,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Table of Contents
 
 * [Changelog](#changelog)
+* [Deployment Workflow Guide](#deployment-workflow-guide)
 * [Using the Makefile](#using-the-makefile)
 * [Quick Start](#quick-start)
 * [Minimum Resources](#minimum-resources)
@@ -25,10 +26,15 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Changelog
 
 * **10/16/2024**
+  * **YAML Configuration:** All settings now in easy-to-edit `vcf-config.yaml` file
+  * **Comprehensive Workflow Guide:** Added `DEPLOYMENT_WORKFLOW.md` connecting all deployment steps
+  * **ESXi Version Documentation:** Clearly documented ESXi 9.0.0.0 build 24755229 requirement throughout
+  * **Dry-Run Support:** Added `--dry-run` flag to USB creation script for safe preview
   * Refactored kickstart generation to use Python with Jinja2 templates (DRY principle)
+  * Converted USB creation to Python with YAML configuration support
   * Added Makefile for simplified command execution
   * Added third ESXi host support (esx03.vcf.lab)
-  * Added USB creation automation script
+  * Added three-node VCF manifest (`vcf90-three-node.json`)
   * Reorganized IP allocation (ESXi hosts: .10-.12, VCF Installer: .21)
   * Set up modern Python tooling with uv and pyproject.toml
 
@@ -38,9 +44,23 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * **07/28/2025**
   * Initial Release
 
+## Deployment Workflow Guide
+
+**📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)**.
+
+This guide provides:
+- Complete workflow from configuration to VCF deployment
+- Step-by-step breakdown of each script and what it does
+- How each step depends on the previous step
+- File dependencies and data flow
+- Detailed explanations of what happens at each stage
+- Troubleshooting guidance
+
+**Perfect for:** Understanding the complete deployment process and how each piece fits together.
+
 ## Using the Makefile
 
-This project includes a comprehensive Makefile to simplify common tasks. No need to remember complex `uv` or Python commands!
+This project includes a comprehensive Makefile to simplify common tasks. No need to remember complex `uv` or Python commands.
 
 ### Quick Reference
 
@@ -99,30 +119,53 @@ make all
 
 ### Customizing Configuration
 
-To customize host configurations (IPs, NVMe disks, etc.):
+All configuration is now managed via YAML. To customize host configurations:
 
-1. Edit `scripts/generate_kickstart.py` (lines 24-77)
+1. Edit `config/vcf-config.yaml` (network settings, IPs, NVMe disks, etc.)
 2. Run `make generate` to regenerate all configs
+
+**Example customizations:**
+
+```yaml
+# config/vcf-config.yaml
+network:
+  gateway: "172.30.0.1"  # Change gateway
+  vlan_id: "30"          # Change VLAN
+
+hosts:
+  - number: 1
+    ip: "172.30.0.10"    # Change IP
+    install_disk: "..."   # Update NVMe device ID
+```
+
+**Using custom config files:**
+
+```bash
+make generate CONFIG=config/my-custom-config.yaml
+```
 
 See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment information.
 
 ## Quick Start
 
-1. Prepare hardware (3x MS-A2 or similar with specs below)
-2. Configure network (5 VLANs: 30, 40, 50, 60, 70)
-3. Setup VCF Offline Depot on HTTP server
-4. Generate kickstart configs: `make generate`
-5. Create ESXi USB installers: `make usb-create USB=/dev/disk2 HOST=1` (repeat for each host)
-6. Deploy ESXi on all hosts (automated via kickstart)
-7. Deploy VCF Installer with `deploy_vcf_installer.sh`
-8. Configure VCF Installer with `setup_vcf_installer.ps1`
-9. Connect to Offline Depot and download binaries
-10. Upload VCF deployment manifest and start deployment
-11. Run `fix_vsan_esa_default_storage_policy.ps1` during deployment (for single/dual host setups)
+1. **Prepare hardware** (3x MS-A2 or similar with specs below)
+2. **Configure network** (5 VLANs: 30, 40, 50, 60, 70)
+3. **Setup VCF Offline Depot** on HTTP server
+4. **Download ESXi 9.0.0.0 ISO** (build 24755229) - See [Software Requirements](#software-requirements)
+5. **Generate kickstart configs:** `make generate`
+6. **Create ESXi USB installers:** `make usb-create USB=/dev/disk2 HOST=1` (repeat for each host)
+7. **Deploy ESXi 9.0.0.0** on all hosts (automated via kickstart) - **This MUST be done before VCF Installer deployment**
+8. **Deploy VCF Installer** with `deploy_vcf_installer.sh`
+9. **Configure VCF Installer** with `setup_vcf_installer.ps1`
+10. **Connect to Offline Depot** and download binaries
+11. **Upload VCF deployment manifest** and start deployment
+12. **Run storage policy fix** `fix_vsan_esa_default_storage_policy.ps1` during deployment (for two-node setups only)
 
 **Total deployment time:** 3-4 hours
 
-**Tip:** Use `make help` to see all available Makefile commands!
+**⚠️ IMPORTANT:** All physical ESXi hosts must be running **ESXi 9.0.0.0 build 24755229** before deploying the VCF Installer (Step 8).
+
+**Tip:** Use `make help` to see all available Makefile commands.
 
 ## Minimum Resources
 
@@ -144,11 +187,24 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
 
 ### Software Requirements
 
-* VMware Cloud Foundation 9.0.0.0 binaries
-* ESXi 9.0 installer ISO
-* vCenter Server 9.0 ISO
-* NSX-T 9.0 components
-* VCF Operations components
+**Required Versions for VCF 9.0.0.0:**
+
+* **ESXi 9.0.0.0** (build 24755229) - **CRITICAL: This exact version must be installed on hosts BEFORE deploying VCF Installer**
+  * Download: [VMware Cloud Foundation Downloads](https://support.broadcom.com/)
+  * ISO: `VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso`
+  * Location in Offline Depot: `PROD/COMP/ESX_HOST/`
+  * **When to install**: Step 1-6 (before running `deploy_vcf_installer.sh`)
+
+* **VCF 9.0.0.0 Binaries** (downloaded via VCF Download Tool):
+  * VCF Installer appliance (SDDC Manager)
+  * vCenter Server 9.0.0.0 ISO
+  * NSX-T 9.0.0.0 components
+  * VCF Operations components (vROps, vRA, vRSLCM, etc.)
+
+**Version Compatibility:**
+- ESXi version MUST match the version specified in VCF 9.0.0.0 release notes
+- All physical ESXi hosts must run the same ESXi build before VCF deployment
+- VCF Installer will manage ESXi versions post-deployment via VCF lifecycle management
 
 ## Build of Materials (BOM)
 
@@ -171,10 +227,11 @@ The following configuration files are included in the `config/` directory:
 
 | File | Purpose |
 |------|---------|
+| [`vcf-config.yaml`](config/vcf-config.yaml) | **Main configuration file** - Edit this to customize your deployment |
 | [`ks-template.cfg.j2`](config/ks-template.cfg.j2) | Jinja2 template for ESXi kickstart configs (single source of truth) |
-| [`ks-esx01.cfg`](config/ks-esx01.cfg) | ESXi kickstart configuration for first physical host (generated) |
-| [`ks-esx02.cfg`](config/ks-esx02.cfg) | ESXi kickstart configuration for second physical host (generated) |
-| [`ks-esx03.cfg`](config/ks-esx03.cfg) | ESXi kickstart configuration for third physical host (generated) |
+| [`ks-esx01.cfg`](config/ks-esx01.cfg) | ESXi kickstart configuration for first physical host (generated from YAML) |
+| [`ks-esx02.cfg`](config/ks-esx02.cfg) | ESXi kickstart configuration for second physical host (generated from YAML) |
+| [`ks-esx03.cfg`](config/ks-esx03.cfg) | ESXi kickstart configuration for third physical host (generated from YAML) |
 | [`vcf90-two-node.json`](config/vcf90-two-node.json) | VCF deployment manifest for two-node fleet (failuresToTolerate=0) |
 | [`vcf90-three-node.json`](config/vcf90-three-node.json) | VCF deployment manifest for three-node fleet (failuresToTolerate=1) |
 | [`unbound.conf`](config/unbound.conf) | DNS server configuration (optional - for local DNS setup) |
@@ -185,13 +242,39 @@ The following automation scripts are provided in the `scripts/` directory:
 
 | Script | Purpose | Prerequisites |
 |--------|---------|---------------|
-| [`generate_kickstart.py`](scripts/generate_kickstart.py) | Generate ESXi kickstart configs from Jinja2 template | Python 3.8+, uv, jinja2 |
-| [`create_esxi_usb.sh`](scripts/create_esxi_usb.sh) | Create bootable ESXi USB installer with kickstart config | macOS, ESXi ISO, sudo access |
-| [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) | Deploy VCF Installer appliance via OVFTool | OVFTool, ESXi with SSH enabled |
+| [`generate_kickstart.py`](scripts/generate_kickstart.py) | Generate ESXi kickstart configs from Jinja2 template and YAML config | Python 3.8+, uv, jinja2, pyyaml |
+| [`create_esxi_usb.py`](scripts/create_esxi_usb.py) | Create bootable ESXi USB installer with kickstart config (supports `--dry-run`) | Python 3.8+, uv, pyyaml, macOS, ESXi ISO, sudo access |
+| [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) | Deploy VCF Installer appliance via OVFTool | OVFTool, ESXi 9.0.0.0 with SSH enabled |
 | [`setup_vcf_installer.ps1`](scripts/setup_vcf_installer.ps1) | Configure VCF Installer post-deployment settings | PowerShell 7+, VMware.PowerCLI module |
-| [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) | Auto-fix vSAN ESA storage policy for single/dual host deployments | PowerCLI, vCenter Server access |
+| [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) | Auto-fix vSAN ESA storage policy for two-node deployments | PowerCLI, vCenter Server access |
 
 ## Script Prerequisites
+
+### create_esxi_usb.py
+
+**System Requirements:**
+
+* Python 3.8+ with uv package manager
+* macOS (for `diskutil` commands)
+* ESXi 9.0.0.0 ISO (build 24755229)
+* USB drive (16GB or larger)
+* sudo access
+
+**Configuration:**
+
+* Edit `config/vcf-config.yaml` to customize host settings
+* Or use `-c/--config` flag for custom config files
+* Use `--dry-run` to preview operations without making changes
+
+**Usage:**
+
+```bash
+# Preview (no root required)
+uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+
+# Create USB (requires sudo)
+sudo make usb-create USB=/dev/disk2 HOST=1
+```
 
 ### deploy_vcf_installer.sh
 
@@ -202,6 +285,7 @@ The following automation scripts are provided in the `scripts/` directory:
 
 **ESXi Host Requirements:**
 
+* **CRITICAL:** ESXi 9.0.0.0 build 24755229 must be installed and running
 * SSH enabled on target ESXi host
 * Root credentials
 * Network port group: `VM Network` (or customize in script)
@@ -272,7 +356,7 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 
 After downloading the required metadata/binaries, you should have a directory structure like the following:
 
-```
+```sh
  PROD
     ├── COMP
     │   ├── ESX_HOST
@@ -312,7 +396,25 @@ After downloading the required metadata/binaries, you should have a directory st
 
 You can host the VCF Offline Depot using a traditional HTTP Web Server (HTTPS is NOT required as the automation in 9 will disable HTTPS). Alternatively, you can simply use Python to serve up the directory (see this [blog post](https://williamlam.com/2025/06/using-http-with-vcf-9-0-installer-for-offline-depot.html)) or even a Synology (see this [blog post](https://williamlam.com/2025/06/vcf-9-0-offline-depot-using-synology.html)).
 
-2. Create a bootable ESXi installer with the ESXi ISO (VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso) using [UNetbootin](https://unetbootin.github.io/)
+2. **Create bootable ESXi USB installers**
+
+📒 **IMPORTANT:** You MUST use **ESXi 9.0.0.0 build 24755229** (or the version specified in your VCF 9.0.0.0 release notes). Using a different ESXi version will cause VCF deployment failures.
+
+**ISO Location:** `VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso` from your VCF Offline Depot at `PROD/COMP/ESX_HOST/`
+
+**Create USB installers using the automated script:**
+
+```bash
+# Dry run first (preview without changes)
+uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+
+# Create USB for each host
+sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk2 HOST=2
+sudo make usb-create USB=/dev/disk2 HOST=3
+```
+
+**Alternative:** Manual creation using [UNetbootin](https://unetbootin.github.io/) (see steps below)
 
 3. We will be performing a scripted installation of ESXi (aka ESXi Kickstart) to remove the number of manual steps that would be needed during the post-installation of ESXi.
 
@@ -421,8 +523,9 @@ Once the VCF metadata has been pulled from your VCF Offline Depot, click on the 
 Upload your VCF deployment manifest and click `Next` to begin the validation.
 
 **Choose the appropriate manifest:**
-- **Two-node cluster:** Use [`vcf90-two-node.json`](config/vcf90-two-node.json) (requires `fix_vsan_esa_default_storage_policy.ps1`)
-- **Three-node cluster:** Use [`vcf90-three-node.json`](config/vcf90-three-node.json) (standard vSAN configuration)
+
+* **Two-node cluster:** Use [`vcf90-two-node.json`](config/vcf90-two-node.json) (requires `fix_vsan_esa_default_storage_policy.ps1`)
+* **Three-node cluster:** Use [`vcf90-three-node.json`](config/vcf90-three-node.json) (standard vSAN configuration)
 
 📒 **Note:** The three-node configuration is recommended as it provides proper vSAN fault tolerance (FTT=1) and doesn't require the storage policy fix script.
 

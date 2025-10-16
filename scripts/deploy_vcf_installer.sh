@@ -2,7 +2,7 @@
 # Author: William Lam
 
 OVFTOOL="/Applications/VMware OVF Tool/ovftool"
-VCF_INSTALLER_OVA="$HOME/Storage/Software/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+VCF_INSTALLER_OVA="/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
 
 # Check if ovftool exists and is executable
 if [[ ! -x "$OVFTOOL" ]]; then
@@ -24,7 +24,7 @@ VM_DATASTORE="local-vmfs-datastore-1"
 
 VCF_INSTALLER_VMNAME=sddcm01
 VCF_INSTALLER_HOSTNAME=sddcm01.vcf.lab
-VCF_INSTALLER_IP=172.30.0.12
+VCF_INSTALLER_IP=172.30.0.21
 VCF_INSTALLER_SUBNET=255.255.255.0
 VCF_INSTALLER_GATEWAY=172.30.0.1
 VCF_INSTALLER_DNS_SERVER=172.30.0.2

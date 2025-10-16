@@ -107,6 +107,12 @@ ENV/
 build/
 dist/
 *.egg-info/
+.venv/
+.pytest_cache/
+
+# uv
+.uv/
+uv.lock
 
 # Node modules (if any)
 node_modules/

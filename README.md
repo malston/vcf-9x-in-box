@@ -9,6 +9,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Table of Contents
 
 * [Changelog](#changelog)
+* [Using the Makefile](#using-the-makefile)
 * [Quick Start](#quick-start)
 * [Minimum Resources](#minimum-resources)
 * [Build of Materials (BOM)](#build-of-materials-bom)
@@ -23,26 +24,105 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
+* **10/16/2024**
+  * Refactored kickstart generation to use Python with Jinja2 templates (DRY principle)
+  * Added Makefile for simplified command execution
+  * Added third ESXi host support (esx03.vcf.lab)
+  * Added USB creation automation script
+  * Reorganized IP allocation (ESXi hosts: .10-.12, VCF Installer: .21)
+  * Set up modern Python tooling with uv and pyproject.toml
+
 * **08/29/2025**
   * Added post-install documentation section
 
 * **07/28/2025**
   * Initial Release
 
+## Using the Makefile
+
+This project includes a comprehensive Makefile to simplify common tasks. No need to remember complex `uv` or Python commands!
+
+### Quick Reference
+
+```bash
+# Show all available commands
+make help
+
+# Show project configuration info
+make info
+```
+
+### Python Setup
+
+```bash
+# Install uv (if not already installed)
+make setup
+
+# Install dependencies (creates .venv automatically)
+make sync
+
+# Clean up virtual environment and generated files
+make clean
+```
+
+### Generate ESXi Kickstart Configs
+
+```bash
+# Generate all kickstart configs (esx01, esx02, esx03)
+make generate
+
+# Generate config for specific host
+make generate-1   # For esx01
+make generate-2   # For esx02
+make generate-3   # For esx03
+
+# Or use: make generate-host HOST=3
+```
+
+### Create Bootable USB
+
+```bash
+# List available disk devices
+make usb-list
+
+# Create bootable USB for specific host
+make usb-create USB=/dev/disk2 HOST=1
+make usb-create USB=/dev/disk2 HOST=3
+```
+
+### Complete Workflow
+
+```bash
+# Clean, setup, and generate all configs
+make all
+```
+
+### Customizing Configuration
+
+To customize host configurations (IPs, NVMe disks, etc.):
+
+1. Edit `scripts/generate_kickstart.py` (lines 24-77)
+2. Run `make generate` to regenerate all configs
+
+See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment information.
+
 ## Quick Start
 
-1. Prepare hardware (2x MS-A2 or similar with specs below)
+1. Prepare hardware (3x MS-A2 or similar with specs below)
 2. Configure network (5 VLANs: 30, 40, 50, 60, 70)
 3. Setup VCF Offline Depot on HTTP server
-4. Create ESXi USB installer with kickstart config
-5. Deploy ESXi on both hosts
-6. Deploy VCF Installer with `deploy_vcf_installer.sh`
-7. Configure VCF Installer with `setup_vcf_installer.ps1`
-8. Connect to Offline Depot and download binaries
-9. Upload VCF deployment manifest and start deployment
-10. Run `fix_vsan_esa_default_storage_policy.ps1` during deployment (for single/dual host setups)
+4. Generate kickstart configs: `make generate`
+5. Create ESXi USB installers: `make usb-create USB=/dev/disk2 HOST=1` (repeat for each host)
+6. Deploy ESXi on all hosts (automated via kickstart)
+7. Deploy VCF Installer with `deploy_vcf_installer.sh`
+8. Configure VCF Installer with `setup_vcf_installer.ps1`
+9. Connect to Offline Depot and download binaries
+10. Upload VCF deployment manifest and start deployment
+11. Run `fix_vsan_esa_default_storage_policy.ps1` during deployment (for single/dual host setups)
 
 **Total deployment time:** 3-4 hours
+
+**Tip:** Use `make help` to see all available Makefile commands!
 
 ## Minimum Resources
 
@@ -91,9 +171,12 @@ The following configuration files are included in the `config/` directory:
 
 | File | Purpose |
 |------|---------|
-| [`ks-esx01.cfg`](config/ks-esx01.cfg) | ESXi kickstart configuration for first physical host |
-| [`ks-esx02.cfg`](config/ks-esx02.cfg) | ESXi kickstart configuration for second physical host |
-| [`vcf90-two-node.json`](config/vcf90-two-node.json) | VCF deployment manifest for two-node fleet |
+| [`ks-template.cfg.j2`](config/ks-template.cfg.j2) | Jinja2 template for ESXi kickstart configs (single source of truth) |
+| [`ks-esx01.cfg`](config/ks-esx01.cfg) | ESXi kickstart configuration for first physical host (generated) |
+| [`ks-esx02.cfg`](config/ks-esx02.cfg) | ESXi kickstart configuration for second physical host (generated) |
+| [`ks-esx03.cfg`](config/ks-esx03.cfg) | ESXi kickstart configuration for third physical host (generated) |
+| [`vcf90-two-node.json`](config/vcf90-two-node.json) | VCF deployment manifest for two-node fleet (failuresToTolerate=0) |
+| [`vcf90-three-node.json`](config/vcf90-three-node.json) | VCF deployment manifest for three-node fleet (failuresToTolerate=1) |
 | [`unbound.conf`](config/unbound.conf) | DNS server configuration (optional - for local DNS setup) |
 
 ## Automation Scripts
@@ -102,6 +185,8 @@ The following automation scripts are provided in the `scripts/` directory:
 
 | Script | Purpose | Prerequisites |
 |--------|---------|---------------|
+| [`generate_kickstart.py`](scripts/generate_kickstart.py) | Generate ESXi kickstart configs from Jinja2 template | Python 3.8+, uv, jinja2 |
+| [`create_esxi_usb.sh`](scripts/create_esxi_usb.sh) | Create bootable ESXi USB installer with kickstart config | macOS, ESXi ISO, sudo access |
 | [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) | Deploy VCF Installer appliance via OVFTool | OVFTool, ESXi with SSH enabled |
 | [`setup_vcf_installer.ps1`](scripts/setup_vcf_installer.ps1) | Configure VCF Installer post-deployment settings | PowerShell 7+, VMware.PowerCLI module |
 | [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) | Auto-fix vSAN ESA storage policy for single/dual host deployments | PowerCLI, vCenter Server access |
@@ -167,7 +252,7 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 | dns        | dns.vcf.lab         | 172.30.0.2  | DNS Server                               |
 | esx01      | esx01.vcf.lab       | 172.30.0.10 | Physical ESX-1 Server                    |
 | esx02      | esx02.vcf.lab       | 172.30.0.11 | Physical ESX-2 Server                    |
-| sddcm01    | sddcm01.vcf.lab     | 172.30.0.12 | VCF Installer / SDDC Manager             |
+| esx03      | esx03.vcf.lab       | 172.30.0.12 | Physical ESX-3 Server                    |
 | vc01       | vc01.vcf.lab        | 172.30.0.13 | vCenter Server for Management Domain     |
 | vcf01      | vcf01.vcf.lab       | 172.30.0.14 | VCF Operations                           |
 | nsx01      | nsx01.vcf.lab       | 172.30.0.15 | NSX Manager VIP for Management Domain    |
@@ -176,6 +261,7 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 | edge01b    | edge01b.vcf.lab     | 172.30.0.18 | NSX Edge 1b for Management Domain        |
 | opsfm01    | opsfm01.vcf.lab     | 172.30.0.19 | VCF Operations Fleet Manager             |
 | opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20 | VCF Operations Proxy Collector           |
+| sddcm01    | sddcm01.vcf.lab     | 172.30.0.21 | VCF Installer / SDDC Manager             |
 | auto01     | auto01.vcf.lab      | 172.30.0.30 | VCF Automation                           |
 
 ## Installation
@@ -332,7 +418,13 @@ Once the VCF metadata has been pulled from your VCF Offline Depot, click on the 
 
 ![](screenshots/screenshot-9.png)
 
-Upload your modified VCF deployment manifest [vcf90-two-node.json](config/vcf90-two-node.json) and click `Next` to begin the validation.
+Upload your VCF deployment manifest and click `Next` to begin the validation.
+
+**Choose the appropriate manifest:**
+- **Two-node cluster:** Use [`vcf90-two-node.json`](config/vcf90-two-node.json) (requires `fix_vsan_esa_default_storage_policy.ps1`)
+- **Three-node cluster:** Use [`vcf90-three-node.json`](config/vcf90-three-node.json) (standard vSAN configuration)
+
+📒 **Note:** The three-node configuration is recommended as it provides proper vSAN fault tolerance (FTT=1) and doesn't require the storage policy fix script.
 
 ![](screenshots/screenshot-10.png)
 
@@ -342,9 +434,11 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
 
 ![](screenshots/screenshot-11.png)
 
-12. **[IMPORTANT - Single/Dual Host Deployments]** Fix vSAN ESA Storage Policy proactively to prevent deployment failure.
+12. **[IMPORTANT - Two-Node Deployments Only]** Fix vSAN ESA Storage Policy proactively to prevent deployment failure.
 
-   **Background:** For single or dual physical ESXi host deployments, the VCF deployment will fail after vCenter Server is deployed due to inability to apply the default vSAN ESA Storage Policy (which requires 3 hosts by default).
+   **Background:** For two-node physical ESXi host deployments, the VCF deployment will fail after vCenter Server is deployed due to inability to apply the default vSAN ESA Storage Policy (which requires 3 hosts by default with FTT=1).
+
+   **When to Run:** **ONLY if you used `vcf90-two-node.json`**. Three-node deployments using `vcf90-three-node.json` do NOT need this fix.
 
    **Proactive Fix:** Run the [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) script **immediately after starting the VCF deployment** (Step 11). This script monitors vCenter Server deployment and automatically updates the vSAN storage policy when created, preventing deployment failure.
 

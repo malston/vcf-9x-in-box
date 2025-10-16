@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration Variables - CUSTOMIZE THESE
-ESXI_ISO_PATH="$HOME/Storage/Software/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+ESXI_ISO_PATH="/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
 WORKING_DIR="./esxi-reinstall-temp"
 
 # Network Configuration for New Setup
@@ -30,6 +30,10 @@ ESX01_HOSTNAME="esx01.vcf.lab"
 ESX02_IP="172.30.0.11"
 ESX02_HOSTNAME="esx02.vcf.lab"
 
+# ESXi Host 3 Configuration
+ESX03_IP="172.30.0.12"
+ESX03_HOSTNAME="esx03.vcf.lab"
+
 # Root Password
 ROOT_PASSWORD="VMware1!"
 
@@ -37,9 +41,11 @@ ROOT_PASSWORD="VMware1!"
 # Run 'vdq -q' on ESXi console to find these values
 ESX01_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________7F17A051D3382500"  # Boot/Install disk for ESX01
 ESX02_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________9E17A051D3382500"  # Boot/Install disk for ESX02
+ESX03_INSTALL_DISK="t10.NVMe____PLACEHOLDER_INSTALL_DISK__________________CHANGE_ME"  # Boot/Install disk for ESX03 - MUST BE UPDATED!
 
 ESX01_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500"  # NVMe Tiering disk for ESX01
 ESX02_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________84A9415145382500"  # NVMe Tiering disk for ESX02
+ESX03_TIERING_DISK="t10.NVMe____PLACEHOLDER_TIERING_DISK______________CHANGE_ME"  # NVMe Tiering disk for ESX03 - MUST BE UPDATED!
 
 # SSH Public Key (optional - leave empty if not using)
 SSH_ROOT_KEY=""
@@ -207,11 +213,83 @@ EOF
 
 echo -e "${GREEN}✓${NC} Created: $WORKING_DIR/ks-esx02.cfg"
 
+# Generate kickstart config for ESX03
+echo -e "${YELLOW}Generating kickstart config for ESX03...${NC}"
+cat > "$WORKING_DIR/ks-esx03.cfg" <<EOF
+vmaccepteula
+install --disk=${ESX03_INSTALL_DISK} --overwritevmfs
+reboot
+
+network --bootproto=static --vlanid=${NEW_VLAN} --ip=${ESX03_IP} --netmask=255.255.255.0 --gateway=${NEW_GATEWAY} --hostname=${ESX03_HOSTNAME} --nameserver=${NEW_DNS} --addvmportgroup=1
+rootpw ${ROOT_PASSWORD}
+
+%firstboot --interpreter=busybox
+
+NVME_TIERING_DEVICE="${ESX03_TIERING_DISK}"
+VMFS_DATASTORE_NAME="local-vmfs-datastore-3"
+NTP_SERVER=${NTP_SERVER}
+SSH_ROOT_KEY="${SSH_ROOT_KEY}"
+MANAGEMENT_VLAN=${NEW_VLAN}
+MANAGEMENT_VSWITCH_MTU=9000
+
+# Ensure hostd is ready
+while ! vim-cmd hostsvc/runtimeinfo; do
+sleep 10
+done
+
+# enable & start SSH
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+
+# enable & start ESXi Shell
+vim-cmd hostsvc/enable_esx_shell
+vim-cmd hostsvc/start_esx_shell
+
+# Suppress ESXi Shell warning
+esxcli system settings advanced set -o /UserVars/SuppressShellWarning -i 1
+
+# Configure NTP
+esxcli system ntp set -e true -s \$NTP_SERVER
+
+# Rename local VMFS datastore
+vim-cmd hostsvc/datastore/rename datastore1 \${VMFS_DATASTORE_NAME}
+
+# Enable & Configure NVMe Tiering
+esxcli system settings kernel set -s MemoryTiering -v TRUE
+esxcli system settings advanced set -o /Mem/TierNvmePct -i 100
+esxcli system tierdevice create -d /vmfs/devices/disks/\${NVME_TIERING_DEVICE}
+
+/bin/generate-certificates
+
+# Workaround required for AMD Ryzen-based CPU
+echo 'monitor_control.disable_apichv ="TRUE"' >> /etc/vmware/config
+
+# Install vSAN ESA Mock VIB
+esxcli network firewall ruleset set -e true -r httpClient
+esxcli software acceptance set --level CommunitySupported
+esxcli software vib install -v https://github.com/lamw/nested-vsan-esa-mock-hw-vib/releases/download/1.0/nested-vsan-esa-mock-hw.vib --no-sig-check
+esxcli network firewall ruleset set -e false -r httpClient
+
+# Configure SSH keys if provided
+if [ -n "\${SSH_ROOT_KEY}" ]; then
+    echo "\${SSH_ROOT_KEY}" > /etc/ssh/keys-root/authorized_keys
+fi
+
+# Configure VM Network VLAN & MTU
+esxcli network vswitch standard portgroup set -p "VM Network" -v \${MANAGEMENT_VLAN}
+esxcli network vswitch standard set -m \${MANAGEMENT_VSWITCH_MTU} -v vSwitch0
+
+reboot
+EOF
+
+echo -e "${GREEN}✓${NC} Created: $WORKING_DIR/ks-esx03.cfg"
+
 # Also update the config directory files
 echo -e "${YELLOW}Updating config directory files...${NC}"
 cp "$WORKING_DIR/ks-esx01.cfg" "../config/ks-esx01.cfg"
 cp "$WORKING_DIR/ks-esx02.cfg" "../config/ks-esx02.cfg"
-echo -e "${GREEN}✓${NC} Updated config/ks-esx01.cfg and config/ks-esx02.cfg"
+cp "$WORKING_DIR/ks-esx03.cfg" "../config/ks-esx03.cfg"
+echo -e "${GREEN}✓${NC} Updated config/ks-esx01.cfg, config/ks-esx02.cfg, and config/ks-esx03.cfg"
 
 # Create BOOT.CFG template
 echo -e "${YELLOW}Creating BOOT.CFG template...${NC}"
@@ -270,6 +348,7 @@ After creating the bootable USB:
 1. **Copy kickstart config to USB root:**
    - For ESX01: Copy `ks-esx01.cfg` to USB and rename to `KS.CFG` (all caps)
    - For ESX02: Copy `ks-esx02.cfg` to USB and rename to `KS.CFG` (all caps)
+   - For ESX03: Copy `ks-esx03.cfg` to USB and rename to `KS.CFG` (all caps)
 
 2. **Modify BOOT.CFG on USB:**
    - Navigate to `EFI/BOOT/` on the USB drive
@@ -296,6 +375,7 @@ For each ESXi host:
 9. After final reboot, the host should be accessible at:
    - ESX01: https://172.30.0.10 or https://esx01.vcf.lab
    - ESX02: https://172.30.0.11 or https://esx02.vcf.lab
+   - ESX03: https://172.30.0.12 or https://esx03.vcf.lab
 
 ## Step 4: Verify Installation
 
@@ -304,8 +384,8 @@ Login to each host via web UI or SSH:
 - Password: `VMware1!`
 
 Verify:
-- Hostname is correct (esx01.vcf.lab or esx02.vcf.lab)
-- IP address is correct (172.30.0.10 or 172.30.0.11)
+- Hostname is correct (esx01.vcf.lab, esx02.vcf.lab, or esx03.vcf.lab)
+- IP address is correct (172.30.0.10, 172.30.0.11, or 172.30.0.12)
 - VLAN 30 is configured on management network
 - DNS resolution works
 - NTP is configured and syncing
@@ -362,10 +442,14 @@ echo -e ""
 echo -e "  ESX02 IP:    ${ESX02_IP}"
 echo -e "  ESX02 FQDN:  ${ESX02_HOSTNAME}"
 echo -e ""
+echo -e "  ESX03 IP:    ${ESX03_IP}"
+echo -e "  ESX03 FQDN:  ${ESX03_HOSTNAME}"
+echo -e ""
 
 echo -e "Generated files in ${YELLOW}${WORKING_DIR}/${NC}:"
 echo -e "  - ks-esx01.cfg (kickstart config for host 1)"
 echo -e "  - ks-esx02.cfg (kickstart config for host 2)"
+echo -e "  - ks-esx03.cfg (kickstart config for host 3)"
 echo -e "  - BOOT.CFG.template (template for USB boot config)"
 echo -e "  - INSTALLATION_INSTRUCTIONS.md (step-by-step guide)"
 echo -e ""
@@ -388,4 +472,5 @@ echo -e ""
 echo -e "${GREEN}Configuration files also copied to:${NC}"
 echo -e "  - config/ks-esx01.cfg"
 echo -e "  - config/ks-esx02.cfg"
+echo -e "  - config/ks-esx03.cfg"
 echo -e ""

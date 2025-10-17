@@ -66,12 +66,12 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 **📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)**.
 
 This guide provides:
-- Complete workflow from configuration to VCF deployment
-- Step-by-step breakdown of each script and what it does
-- How each step depends on the previous step
-- File dependencies and data flow
-- Detailed explanations of what happens at each stage
-- Troubleshooting guidance
+* Complete workflow from configuration to VCF deployment
+* Step-by-step breakdown of each script and what it does
+* How each step depends on the previous step
+* File dependencies and data flow
+* Detailed explanations of what happens at each stage
+* Troubleshooting guidance
 
 **Perfect for:** Understanding the complete deployment process and how each piece fits together.
 
@@ -219,9 +219,9 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
   * VCF Operations components (vROps, vRA, vRSLCM, etc.)
 
 **Version Compatibility:**
-- ESXi version MUST match the version specified in VCF 9.0.0.0 release notes
-- All physical ESXi hosts must run the same ESXi build before VCF deployment
-- VCF Installer will manage ESXi versions post-deployment via VCF lifecycle management
+* ESXi version MUST match the version specified in VCF 9.0.0.0 release notes
+* All physical ESXi hosts must run the same ESXi build before VCF deployment
+* VCF Installer will manage ESXi versions post-deployment via VCF lifecycle management
 
 ## Build of Materials (BOM)
 

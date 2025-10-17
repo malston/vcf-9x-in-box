@@ -11,6 +11,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 ### 1. deploy_vcf_installer.sh → deploy_vcf_installer.py
 
 **Improvements:**
+
 - ✅ YAML configuration support (reads from `config/vcf-config.yaml`)
 - ✅ Dry-run mode for safe preview (`--dry-run`)
 - ✅ Type hints for better code clarity
@@ -22,6 +23,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 - ✅ Comprehensive help text and examples
 
 **Key Features:**
+
 - Automatically selects target host from config (no hardcoded IPs)
 - Validates OVFTool and OVA file existence before deployment
 - Supports custom config files via `-c/--config` flag
@@ -31,6 +33,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 ### 2. setup_vcf_installer.ps1 → setup_vcf_installer.py
 
 **Improvements:**
+
 - ✅ Uses pyvmomi (VMware Python SDK) instead of PowerCLI
 - ✅ YAML configuration support
 - ✅ Dry-run mode for safe preview
@@ -41,6 +44,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 - ✅ Progress tracking with timeouts
 
 **Key Features:**
+
 - Waits for VCF Installer UI to be ready (with configurable timeout)
 - Uses VMware Guest Operations API for secure command execution
 - Supports SSH key configuration
@@ -51,6 +55,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 ### 3. fix_vsan_esa_default_storage_policy.ps1 → fix_vsan_esa_default_storage_policy.py
 
 **Improvements:**
+
 - ✅ Uses pyvmomi for vCenter/SPBM operations
 - ✅ YAML configuration support
 - ✅ Dry-run mode for safe preview
@@ -61,6 +66,7 @@ Successfully standardized all automation scripts to Python, replacing bash and P
 - ✅ Ping monitoring before connection attempts
 
 **Key Features:**
+
 - Automatically detects if fix is needed based on host count
 - Waits for vCenter to be pingable
 - Waits for vCenter connection readiness
@@ -179,22 +185,26 @@ make lint                              # Lint all Python scripts
 ## Benefits of Python Standardization
 
 ### 1. **Consistency**
+
 - All scripts now use the same language and patterns
 - Uniform command-line interface across all scripts
 - Consistent error handling and output formatting
 
 ### 2. **Maintainability**
+
 - Type hints improve code clarity and IDE support
 - Better code organization with classes and methods
 - Easier to test and debug
 - Single source of truth for configuration (YAML)
 
 ### 3. **Cross-Platform**
+
 - No PowerShell dependency (works on macOS, Linux, Windows)
 - No bash-specific features
 - Python 3.8+ compatibility
 
 ### 4. **Better User Experience**
+
 - Dry-run mode for all scripts (safe preview)
 - Colored output for better readability
 - Progress indicators for long-running operations
@@ -202,6 +212,7 @@ make lint                              # Lint all Python scripts
 - Makefile targets for simplified usage
 
 ### 5. **Advanced Features**
+
 - Wait/retry logic with configurable timeouts
 - Prerequisite validation before execution
 - Smart skip logic (e.g., vSAN policy fix for 3+ hosts)
@@ -211,7 +222,9 @@ make lint                              # Lint all Python scripts
 ## Recommendations for Future Improvements
 
 ### 1. **Testing**
+
 Consider adding:
+
 - Unit tests for individual functions
 - Integration tests for end-to-end workflows
 - Mock objects for VMware API calls
@@ -226,6 +239,7 @@ tests/
 ```
 
 ### 2. **Configuration Validation**
+
 Add schema validation for `vcf-config.yaml`:
 
 ```python
@@ -245,6 +259,7 @@ class Config(BaseModel):
 ```
 
 ### 3. **Logging**
+
 Add proper logging to files:
 
 ```python
@@ -259,6 +274,7 @@ logging.basicConfig(
 ```
 
 ### 4. **Error Recovery**
+
 Add automatic retry logic for transient failures:
 
 ```python
@@ -271,6 +287,7 @@ def deploy_ova():
 ```
 
 ### 5. **Progress Bars**
+
 Consider using `tqdm` for better progress visualization:
 
 ```python
@@ -282,6 +299,7 @@ with tqdm(total=100, desc="Deploying VCF Installer") as pbar:
 ```
 
 ### 6. **Configuration Templates**
+
 Create example/template config files:
 
 ```
@@ -292,7 +310,9 @@ config/
 ```
 
 ### 7. **CI/CD Integration**
+
 Add GitHub Actions or similar for:
+
 - Automated testing
 - Linting (pylint, mypy, black)
 - Documentation generation
@@ -314,6 +334,7 @@ jobs:
 ```
 
 ### 8. **Interactive Mode**
+
 Add interactive prompts for missing configuration:
 
 ```python
@@ -324,6 +345,7 @@ if not config.get('vcf_installer', {}).get('root_password'):
 ```
 
 ### 9. **Parallel Execution**
+
 Use async/await for parallel operations:
 
 ```python
@@ -339,6 +361,7 @@ async def deploy_multiple_hosts():
 ```
 
 ### 10. **Configuration Diff/Validation**
+
 Add commands to validate and diff configurations:
 
 ```bash

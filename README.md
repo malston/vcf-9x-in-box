@@ -9,6 +9,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 ## Table of Contents
 
 * [Changelog](#changelog)
+* [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
 * [Deployment Workflow Guide](#deployment-workflow-guide)
 * [Using the Makefile](#using-the-makefile)
 * [Quick Start](#quick-start)
@@ -34,6 +35,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
   * **Unified Configuration:** All scripts read from single `vcf-config.yaml` file
   * **Makefile Enhancements:** Added targets for all new scripts with dry-run support
   * **Improved Documentation:** Updated README with Python script usage and Makefile commands
+  * **FAQ Added:** Created comprehensive FAQ.md with common questions and detailed answers
   * **Dependencies:** Added pyvmomi and requests to pyproject.toml
 
 * **10/16/2024**
@@ -60,6 +62,19 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 * **07/28/2025**
   * Initial Release
+
+## Frequently Asked Questions (FAQ)
+
+**❓ NEW:** Common questions and answers about VCF 9.x in a Box deployment. See **[FAQ.md](FAQ.md)**.
+
+**Popular topics:**
+- Do I need 3 separate USB drives? (No, you can reuse one!)
+- Does previous ESXi installation matter? (No, kickstart handles it!)
+- How long does deployment take? (~5-6 hours total)
+- What ESXi version is required? (9.0.0.0 build 24755229)
+- When to run the vSAN policy fix script? (2-node only, immediately after deployment start)
+
+See the full FAQ for detailed answers and many more questions.
 
 ## Deployment Workflow Guide
 

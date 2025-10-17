@@ -44,13 +44,13 @@ This guide explains the complete deployment workflow from generating kickstart c
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Step 5: Deploy VCF Installer Appliance                          │
-│ Run: ./scripts/deploy_vcf_installer.sh                          │
+│ Run: make deploy-vcf-installer                                  │
 │ └─> Result: VCF Installer VM at 172.30.0.21                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Step 6: Configure VCF Installer                                 │
-│ Run: ./scripts/setup_vcf_installer.ps1                          │
+│ Run: make setup-vcf-installer                                   │
 │ └─> Result: VCF Installer ready to deploy VCF                   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -391,12 +391,12 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 
 ### Step 5: Deploy VCF Installer Appliance
 
-**Script:** `scripts/deploy_vcf_installer.sh`
+**Script:** `scripts/deploy_vcf_installer.py`
 
 **What It Does:**
 
 1. Uses OVFTool to deploy VCF Installer OVA
-2. Deploys to one of the ESXi hosts (typically esx01)
+2. Deploys to one of the ESXi hosts (configured in `vcf-config.yaml`)
 3. Configures networking for VCF Installer
 4. Powers on the VM
 
@@ -438,27 +438,28 @@ Result:
 **Commands:**
 
 ```bash
-# Edit script first (lines 19-35)
-vim scripts/deploy_vcf_installer.sh
+# Edit configuration first
+vim config/vcf-config.yaml
 
-# Variables to configure:
-ESXI_HOST="172.30.0.10"          # Which ESXi host to deploy to
-ESXI_USERNAME="root"
-ESXI_PASSWORD="VMware1!"
-VCFI_IP="172.30.0.21"            # VCF Installer IP
-VCFI_GATEWAY="172.30.0.1"
-VCFI_DNS="172.30.0.2"
-VCFI_HOSTNAME="sddcm01.vcf.lab"
-VCFI_ROOT_PASSWORD="VMware1!VMware1!"
-VCFI_ADMIN_PASSWORD="VMware1!VMware1!"
-OVA_PATH="/path/to/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
-DATASTORE="local-vmfs-datastore-1"  # Created by kickstart
-NETWORK="VM Network"                 # ESXi port group
+# Settings to configure:
+vcf_installer:
+  ova_path: "/path/to/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+  vm_name: "sddcm01"
+  hostname: "sddcm01.vcf.lab"
+  ip: "172.30.0.21"
+  root_password: "VMware1!VMware1!"
+  admin_password: "VMware1!VMware1!"
+  target_host: 1                  # Deploys to hosts[0] (esx01)
+  vm_network: "VM Network"
+
+# Preview deployment (recommended)
+make deploy-vcf-installer-dry-run
 
 # Run deployment
-cd scripts
-chmod +x deploy_vcf_installer.sh
-./deploy_vcf_installer.sh
+make deploy-vcf-installer
+
+# Or use Python directly
+uv run scripts/deploy_vcf_installer.py
 ```
 
 **Input Files:**
@@ -493,34 +494,33 @@ vim-cmd vmsvc/power.getstate <vmid>
 
 ### Step 6: Configure VCF Installer
 
-**Script:** `scripts/setup_vcf_installer.ps1`
+**Script:** `scripts/setup_vcf_installer.py`
 
 **What It Does:**
 
-1. Connects to VCF Installer via API
-2. Configures offline depot settings
-3. Disables HTTPS requirement (HTTP OK for lab)
+1. Waits for VCF Installer UI to be ready
+2. Connects to ESXi host
+3. Configures VCF Installer settings via guest operations
 4. Prepares VCF Installer for deployment
 
 **Why This Step:**
 
-- VCF Installer needs to know where to find binaries (Offline Depot)
-- By default requires HTTPS, but lab setups often use HTTP
-- Some settings can't be changed via UI, require API calls
+- VCF Installer needs configuration for deployment
+- Disables HTTPS requirement for offline depot (HTTP OK for lab)
+- Configures feature properties for single/dual host support
+- Some settings can't be changed via UI
 
 **How It Works:**
 
-```powershell
+```python
 Process:
-  1. Import PowerCLI module
-  2. Connect to VCF Installer at 172.30.0.21
-  3. Authenticate with admin@local credentials
-  4. Configure:
-     - Offline depot URL (http://your-server/VCF/PROD)
-     - Disable HTTPS requirement
-     - Set download paths
-  5. Test connection to depot
-  6. Verify configuration
+  1. Connect to ESXi host via pyvmomi
+  2. Wait for VCF Installer UI to be ready
+  3. Find VCF Installer VM
+  4. Generate configuration script
+  5. Transfer script to VM via guest operations
+  6. Execute script in guest
+  7. Restart VCF Installer services
 
 Result:
   - VCF Installer ready to connect to offline depot
@@ -530,17 +530,24 @@ Result:
 
 **Commands:**
 
-```powershell
-# Edit script first (lines 10-15)
-# Set:
-$vcfInstallerFQDN = "sddcm01.vcf.lab"
-$vcfInstallerAdmin = "admin@local"
-$vcfInstallerPassword = "VMware1!VMware1!"
-$offlineDepotUrl = "http://your-nas.lab/vcf-depot/PROD"
+```bash
+# Configuration is read from config/vcf-config.yaml:
+vcf_installer:
+  features:
+    single_host_domain: true
+    skip_nic_speed_validation: true
+  depot:
+    type: "offline"
+    use_https: false
+
+# Preview configuration (recommended)
+make setup-vcf-installer-dry-run
 
 # Run configuration
-cd scripts
-pwsh ./setup_vcf_installer.ps1
+make setup-vcf-installer
+
+# Or use Python directly
+uv run scripts/setup_vcf_installer.py
 ```
 
 **Input:**
@@ -695,17 +702,22 @@ IF using vcf90-two-node.json:
 
   IMMEDIATELY after clicking "DEPLOY", run:
 
-  pwsh scripts/fix_vsan_esa_default_storage_policy.ps1
+  make fix-vsan-policy
+
+  Or with Python directly:
+  uv run scripts/fix_vsan_esa_default_storage_policy.py
 
   Why:
   - Default vSAN policy requires 3 hosts (FTT=1)
   - Two-node needs different policy (FTT=0)
   - Script waits for vCenter, then auto-fixes policy
   - Prevents deployment failure
+  - Script auto-detects host count from config/vcf-config.yaml
 
 IF using vcf90-three-node.json:
 
   No action needed - standard vSAN policy works
+  (Script will auto-skip if 3+ hosts detected)
 ```
 
 #### 7.5 Monitoring Deployment
@@ -731,7 +743,7 @@ SSH to VCF Installer for detailed logs:
 ```
 config/vcf-config.yaml                    # Source of truth
     ↓
-scripts/generate_kickstart.py             # Reads YAML
+scripts/generate_kickstart.py             # Reads YAML, generates configs
     ↓
 config/ks-esx01.cfg                       # Generated kickstart
 config/ks-esx02.cfg
@@ -743,11 +755,11 @@ USB Drive with KS.CFG                     # Bootable installer
     ↓
 ESXi Installed on MS-A2                   # Physical hosts ready
     ↓
-scripts/deploy_vcf_installer.sh           # Deploys on ESXi
+scripts/deploy_vcf_installer.py           # Deploys on ESXi
     ↓
 VCF Installer VM at 172.30.0.21          # Orchestrator ready
     ↓
-scripts/setup_vcf_installer.ps1           # Configures orchestrator
+scripts/setup_vcf_installer.py            # Configures orchestrator
     ↓
 config/vcf90-three-node.json              # Deployment manifest
     ↓
@@ -758,13 +770,13 @@ VCF Management Domain Deployed            # Complete VCF environment
 
 | File Type | Purpose | Created By | Used By |
 |-----------|---------|------------|---------|
-| `vcf-config.yaml` | Master configuration | User (manually edit) | `generate_kickstart.py`, `create_esxi_usb.py` |
+| `vcf-config.yaml` | Master configuration | User (manually edit) | All Python scripts |
 | `ks-template.cfg.j2` | Kickstart template | Project (version control) | `generate_kickstart.py` |
 | `ks-esx0X.cfg` | ESXi kickstart configs | `generate_kickstart.py` | `create_esxi_usb.py` |
 | USB Drive | Bootable ESXi installer | `create_esxi_usb.py` | Physical host (boot) |
-| ESXi Hosts | Running infrastructure | USB installer | `deploy_vcf_installer.sh` |
-| VCF Installer OVA | Orchestrator appliance | VMware (download) | `deploy_vcf_installer.sh` |
-| VCF Installer VM | Running orchestrator | `deploy_vcf_installer.sh` | `setup_vcf_installer.ps1`, VCF deployment |
+| ESXi Hosts | Running infrastructure | USB installer | `deploy_vcf_installer.py` |
+| VCF Installer OVA | Orchestrator appliance | VMware (download) | `deploy_vcf_installer.py` |
+| VCF Installer VM | Running orchestrator | `deploy_vcf_installer.py` | `setup_vcf_installer.py`, VCF deployment |
 | `vcf90-three-node.json` | VCF manifest | Project (customize) | VCF Installer (deployment) |
 
 ---
@@ -886,13 +898,14 @@ ssh root@172.30.0.11 "vmware -v"
 ssh root@172.30.0.12 "vmware -v"
 
 # 5. Deploy VCF Installer
-cd scripts
-vim deploy_vcf_installer.sh  # Edit variables
-./deploy_vcf_installer.sh
+make deploy-vcf-installer
+# Or with dry-run first:
+# make deploy-vcf-installer-dry-run
 
 # 6. Configure VCF Installer
-vim setup_vcf_installer.ps1  # Edit variables
-pwsh ./setup_vcf_installer.ps1
+make setup-vcf-installer
+# Or with dry-run first:
+# make setup-vcf-installer-dry-run
 
 # 7. Deploy VCF (via UI)
 # - Login to https://sddcm01.vcf.lab
@@ -901,7 +914,13 @@ pwsh ./setup_vcf_installer.ps1
 # - Upload manifest (config/vcf90-three-node.json)
 # - Start deployment
 
-# 8. Monitor deployment (3-4 hours)
+# 8. Fix vSAN policy (TWO-NODE ONLY)
+# If using vcf90-two-node.json, run immediately after starting deployment:
+make fix-vsan-policy
+# Or with dry-run first:
+# make fix-vsan-policy-dry-run
+
+# 9. Monitor deployment (3-4 hours)
 ssh root@172.30.0.21
 tail -f /var/log/vmware/vcf/bringup/vcf-bringup.log
 ```
@@ -932,4 +951,4 @@ tail -f /var/log/vmware/vcf/bringup/vcf-bringup.log
 
 ---
 
-**Last Updated:** October 16, 2024
+**Last Updated:** October 17, 2024

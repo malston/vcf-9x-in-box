@@ -612,7 +612,7 @@ Upload your VCF deployment manifest and click `Next` to begin the validation.
 
 **Choose the appropriate manifest:**
 
-* **Two-node cluster:** Use [`vcf90-two-node.json`](config/vcf90-two-node.json) (requires `fix_vsan_esa_default_storage_policy.ps1`)
+* **Two-node cluster:** Use [`vcf90-two-node.json`](config/vcf90-two-node.json) (requires `make fix-vsan-policy`)
 * **Three-node cluster:** Use [`vcf90-three-node.json`](config/vcf90-three-node.json) (standard vSAN configuration)
 
 📒 **Note:** The three-node configuration is recommended as it provides proper vSAN fault tolerance (FTT=1) and doesn't require the storage policy fix script.

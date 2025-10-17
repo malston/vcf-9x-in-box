@@ -52,3 +52,7 @@ hosts:
 # - To find NVMe device identifiers, boot ESXi installer and run 'vdq -q'
 # - All IPs should be on the same subnet as specified in network.subnet
 # - Ensure VLAN is configured on your physical switch
+#
+# Conditional Configuration (based on number of hosts):
+# - < 3 hosts: vSAN ESA Mock VIB is installed (required for vSAN with < 3 hosts)
+# - >= 3 hosts: Standard vSAN configuration, TierTdmNumBatches optimization enabled

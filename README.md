@@ -25,6 +25,17 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
+* **10/17/2024**
+  * **Python Standardization:** Converted all scripts to Python for consistency
+    * `deploy_vcf_installer.sh` → `deploy_vcf_installer.py` (with YAML config support)
+    * `setup_vcf_installer.ps1` → `setup_vcf_installer.py` (using pyvmomi SDK)
+    * `fix_vsan_esa_default_storage_policy.ps1` → `fix_vsan_esa_default_storage_policy.py` (using pyvmomi SDK)
+  * **Dry-Run Support:** All deployment scripts now support `--dry-run` preview mode
+  * **Unified Configuration:** All scripts read from single `vcf-config.yaml` file
+  * **Makefile Enhancements:** Added targets for all new scripts with dry-run support
+  * **Improved Documentation:** Updated README with Python script usage and Makefile commands
+  * **Dependencies:** Added pyvmomi and requests to pyproject.toml
+
 * **10/16/2024**
   * **YAML Configuration:** All settings now in easy-to-edit `vcf-config.yaml` file
   * **Comprehensive Workflow Guide:** Added `DEPLOYMENT_WORKFLOW.md` connecting all deployment steps
@@ -161,11 +172,11 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
 5. **Generate kickstart configs:** `make generate`
 6. **Create ESXi USB installers:** `make usb-create USB=/dev/disk2 HOST=1` (repeat for each host)
 7. **Deploy ESXi 9.0.0.0** on all hosts (automated via kickstart) - **This MUST be done before VCF Installer deployment**
-8. **Deploy VCF Installer** with `deploy_vcf_installer.sh`
-9. **Configure VCF Installer** with `setup_vcf_installer.ps1`
+8. **Deploy VCF Installer:** `make deploy-vcf-installer`
+9. **Configure VCF Installer:** `make setup-vcf-installer`
 10. **Connect to Offline Depot** and download binaries
 11. **Upload VCF deployment manifest** and start deployment
-12. **Run storage policy fix** `fix_vsan_esa_default_storage_policy.ps1` during deployment (for two-node setups only)
+12. **Run storage policy fix** (two-node only): `make fix-vsan-policy`
 
 **Total deployment time:** 3-4 hours
 
@@ -199,7 +210,7 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
   * Download: [VMware Cloud Foundation Downloads](https://support.broadcom.com/)
   * ISO: `VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso`
   * Location in Offline Depot: `PROD/COMP/ESX_HOST/`
-  * **When to install**: Step 1-6 (before running `deploy_vcf_installer.sh`)
+  * **When to install**: Step 1-7 (before running `make deploy-vcf-installer`)
 
 * **VCF 9.0.0.0 Binaries** (downloaded via VCF Download Tool):
   * VCF Installer appliance (SDDC Manager)
@@ -250,9 +261,9 @@ The following automation scripts are provided in the `scripts/` directory:
 |--------|---------|---------------|
 | [`generate_kickstart.py`](scripts/generate_kickstart.py) | Generate ESXi kickstart configs from Jinja2 template and YAML config | Python 3.8+, uv, jinja2, pyyaml |
 | [`create_esxi_usb.py`](scripts/create_esxi_usb.py) | Create bootable ESXi USB installer with kickstart config (supports `--dry-run`) | Python 3.8+, uv, pyyaml, macOS, ESXi ISO, sudo access |
-| [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) | Deploy VCF Installer appliance via OVFTool | OVFTool, ESXi 9.0.0.0 with SSH enabled |
-| [`setup_vcf_installer.ps1`](scripts/setup_vcf_installer.ps1) | Configure VCF Installer post-deployment settings | PowerShell 7+, VMware.PowerCLI module |
-| [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) | Auto-fix vSAN ESA storage policy for two-node deployments | PowerCLI, vCenter Server access |
+| [`deploy_vcf_installer.py`](scripts/deploy_vcf_installer.py) | Deploy VCF Installer appliance via OVFTool (supports `--dry-run`) | Python 3.8+, uv, pyyaml, OVFTool, ESXi 9.0.0.0 with SSH enabled |
+| [`setup_vcf_installer.py`](scripts/setup_vcf_installer.py) | Configure VCF Installer post-deployment settings (supports `--dry-run`) | Python 3.8+, uv, pyvmomi, requests |
+| [`fix_vsan_esa_default_storage_policy.py`](scripts/fix_vsan_esa_default_storage_policy.py) | Auto-fix vSAN ESA storage policy for two-node deployments (supports `--dry-run`) | Python 3.8+, uv, pyvmomi |
 
 ## Script Prerequisites
 
@@ -282,10 +293,11 @@ uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
 sudo make usb-create USB=/dev/disk2 HOST=1
 ```
 
-### deploy_vcf_installer.sh
+### deploy_vcf_installer.py
 
-**Local System Requirements:**
+**System Requirements:**
 
+* Python 3.8+ with uv package manager
 * **OVFTool:** Download and install from [Broadcom Developer Portal](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest)
 * **VCF Installer OVA:** Downloaded from VCF 9.0 binaries
 
@@ -294,37 +306,86 @@ sudo make usb-create USB=/dev/disk2 HOST=1
 * **CRITICAL:** ESXi 9.0.0.0 build 24755229 must be installed and running
 * SSH enabled on target ESXi host
 * Root credentials
-* Network port group: `VM Network` (or customize in script)
-* Datastore with 15-20GB free space (e.g., `local-vmfs-datastore-1`)
+* Datastore with 15-20GB free space
 
-**Before Running:**
-Edit variables in the script (lines 19-35):
+**Configuration:**
 
-* ESXi host IP, username, password
-* VCF Installer networking (IP, gateway, DNS, NTP)
-* Datastore and network port group names
-* Root and admin passwords
+* Edit `config/vcf-config.yaml` to customize VCF Installer deployment settings
+* Or use `-c/--config` flag for custom config files
+* Use `--dry-run` to preview deployment without making changes
 
-### setup_vcf_installer.ps1
+**Usage:**
 
-**Requirements:**
+```bash
+# Preview deployment
+make deploy-vcf-installer-dry-run
 
-* PowerShell 7 or later
-* VMware PowerCLI module: `Install-Module -Name VMware.PowerCLI`
-* Network access to VCF Installer appliance
-* VCF Installer admin credentials
+# Deploy VCF Installer
+make deploy-vcf-installer
 
-### fix_vsan_esa_default_storage_policy.ps1
+# Or use direct Python command
+uv run scripts/deploy_vcf_installer.py --dry-run
+uv run scripts/deploy_vcf_installer.py
+```
 
-**Requirements:**
+### setup_vcf_installer.py
 
-* PowerShell 7 or later
-* VMware PowerCLI module installed
-* vCenter Server credentials (configured in VCF deployment)
-* Network access to vCenter Server
+**System Requirements:**
+
+* Python 3.8+ with uv package manager
+* Network access to ESXi host and VCF Installer appliance
+* VMware Tools running in VCF Installer VM
+
+**Configuration:**
+
+* Edit `config/vcf-config.yaml` to customize VCF Installer settings
+* Or use `-c/--config` flag for custom config files
+* Use `--dry-run` to preview configuration without making changes
+
+**Usage:**
+
+```bash
+# Preview configuration
+make setup-vcf-installer-dry-run
+
+# Configure VCF Installer
+make setup-vcf-installer
+
+# Or use direct Python command
+uv run scripts/setup_vcf_installer.py --dry-run
+uv run scripts/setup_vcf_installer.py
+```
+
+### fix_vsan_esa_default_storage_policy.py
+
+**System Requirements:**
+
+* Python 3.8+ with uv package manager
+* Network access to vCenter Server (will be deployed by VCF)
+* vCenter Server credentials from `config/vcf-config.yaml`
+
+**Configuration:**
+
+* Edit `config/vcf-config.yaml` with vCenter credentials
+* Or use `-c/--config` flag for custom config files
+* Use `--dry-run` to preview changes without making them
+
+**Usage:**
+
+```bash
+# Preview policy fix
+make fix-vsan-policy-dry-run
+
+# Fix vSAN storage policy (2-node only)
+make fix-vsan-policy
+
+# Or use direct Python command
+uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run
+uv run scripts/fix_vsan_esa_default_storage_policy.py
+```
 
 **When to Run:**
-For single or dual-host deployments, run this script **proactively** during VCF deployment to prevent vSAN storage policy failures.
+For two-node deployments **ONLY**, run this script **immediately after starting the VCF deployment** (Step 11) to proactively prevent vSAN storage policy failures. Three-node deployments do NOT need this fix.
 
 ## Prereq
 
@@ -479,32 +540,53 @@ EOF
 
 📒 If you are going to run a local DNS Server on the ESXi hosts that will deploy VCF 9.0, you should specify the final DNS Server IP Address and DNS Domain when provisioning your ESXi hosts. This will ensure that everything will resolve once you deploy your DNS Server, which will happen _after_ your ESXi hosts have been provisioned and removes and additional step by needing to update the DNS information.
 
-8. Deploy the VCF Installer appliance using the [`deploy_vcf_installer.sh`](scripts/deploy_vcf_installer.sh) script.
+8. Deploy the VCF Installer appliance using the [`deploy_vcf_installer.py`](scripts/deploy_vcf_installer.py) script.
 
    **Prerequisites:**
+   * Python 3.8+ with uv (`make setup` and `make sync`)
    * OVFTool installed (download from [Broadcom Developer Portal](https://developer.broadcom.com/tools/open-virtualization-format-ovf-tool/latest))
    * VCF Installer OVA downloaded to your local system
 
-   **Before running:**
-   Edit the script variables (lines 19-35) to match your environment:
-   * ESXi host IP address, username, password
-   * VCF Installer networking configuration (IP, gateway, DNS, NTP)
-   * Datastore and network port group names
-   * Root and admin passwords
+   **Configuration:**
+   Edit `config/vcf-config.yaml` to match your environment:
+   * VCF Installer OVA path
+   * Target ESXi host selection
+   * VCF Installer networking (IP, hostname, passwords)
+   * Network and datastore settings
 
    **Run the script:**
 
    ```bash
-   cd scripts
-   chmod +x deploy_vcf_installer.sh
-   ./deploy_vcf_installer.sh
+   # Preview deployment first (recommended)
+   make deploy-vcf-installer-dry-run
+
+   # Deploy VCF Installer
+   make deploy-vcf-installer
+
+   # Or use direct Python command
+   uv run scripts/deploy_vcf_installer.py
    ```
 
    The script will deploy the VCF Installer appliance and wait for it to power on.
 
 ![](screenshots/screenshot-4.png)
 
-9. After the VCF Installer is up and running, we will need to make a few configuration changes, which I have automated and you can simply run by using the following PowerShell script [setup_vcf_installer.ps1](scripts/setup_vcf_installer.ps1)
+9. After the VCF Installer is up and running, configure it using the [`setup_vcf_installer.py`](scripts/setup_vcf_installer.py) script.
+
+   **Run the script:**
+
+   ```bash
+   # Preview configuration first (recommended)
+   make setup-vcf-installer-dry-run
+
+   # Configure VCF Installer
+   make setup-vcf-installer
+
+   # Or use direct Python command
+   uv run scripts/setup_vcf_installer.py
+   ```
+
+   The script will wait for the VCF Installer UI to be ready, then apply the necessary configuration changes.
 
 ![](screenshots/screenshot-5.png)
 
@@ -549,27 +631,33 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
 
    **When to Run:** **ONLY if you used `vcf90-two-node.json`**. Three-node deployments using `vcf90-three-node.json` do NOT need this fix.
 
-   **Proactive Fix:** Run the [`fix_vsan_esa_default_storage_policy.ps1`](scripts/fix_vsan_esa_default_storage_policy.ps1) script **immediately after starting the VCF deployment** (Step 11). This script monitors vCenter Server deployment and automatically updates the vSAN storage policy when created, preventing deployment failure.
+   **Proactive Fix:** Run the [`fix_vsan_esa_default_storage_policy.py`](scripts/fix_vsan_esa_default_storage_policy.py) script **immediately after starting the VCF deployment** (Step 11). This script monitors vCenter Server deployment and automatically updates the vSAN storage policy when created, preventing deployment failure.
 
    **Run the script:**
 
-   ```powershell
-   cd scripts
-   ./fix_vsan_esa_default_storage_policy.ps1
+   ```bash
+   # Preview what the script will do (recommended)
+   make fix-vsan-policy-dry-run
+
+   # Fix the storage policy
+   make fix-vsan-policy
+
+   # Or use direct Python command
+   uv run scripts/fix_vsan_esa_default_storage_policy.py
    ```
 
    ![](screenshots/screenshot-12.png)
 
    The script will:
 
-* Wait until vCenter Server is available
-* Monitor for vSAN ESA Storage Policy creation
-* Automatically update the policy to support single/dual host configurations
+* Wait until vCenter Server is available (monitors ping and connection readiness)
+* Wait for vSAN ESA Storage Policy creation
+* Automatically update the policy from FTT=1 to FTT=0 (required for 2-node)
 * Prevent deployment failure that would require manual remediation
 
    ![](screenshots/screenshot-13.png)
 
-   **Note:** This step is **only required** for single or dual-host deployments. Three or more host deployments do not need this fix.
+   **Note:** This step is **only required** for two-host deployments. Three or more host deployments do not need this fix. The script automatically detects host count from `config/vcf-config.yaml` and skips execution if not needed.
 
 13. The deployment will take a few hours and once everything has been deployed, you should see a success page like the following:
 
@@ -625,9 +713,9 @@ Now that you have a fully functional VCF 9 Fleet fully deployed, here are some t
 
 * **Solution:** If using MikroTik devices, this is a known issue. Acknowledge the warning if you've confirmed Jumbo Frames are configured correctly
 
-**Problem:** vSAN ESA Storage Policy error on single/dual host deployment
+**Problem:** vSAN ESA Storage Policy error on two-node deployment
 
-* **Solution:** Run `fix_vsan_esa_default_storage_policy.ps1` script immediately after starting VCF deployment (see Step 12)
+* **Solution:** Run `make fix-vsan-policy` (or `uv run scripts/fix_vsan_esa_default_storage_policy.py`) immediately after starting VCF deployment (see Step 12)
 
 **Problem:** VCF Offline Depot connection fails
 

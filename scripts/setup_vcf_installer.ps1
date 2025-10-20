@@ -10,10 +10,12 @@ $SSHKeys = ""
 
 $VCFFeatureProperties = @{
     "feature.vcf.internal.single.host.domain" = "true"
+    "feature.vcf.vgl-43370.vsan.esa.sddc.managed.disk.claim" = "true"
 }
 
 $VCFDomainManagerProperties = @{
     "enable.speed.of.physical.nics.validation" = "false"
+    "vsan.esa.sddc.managed.disk.claim" = "true"
 }
 
 $VCFInstallerSoftwareDepot = "offline"

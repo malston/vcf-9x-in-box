@@ -7,7 +7,10 @@
 - [x] Move Mikrotik uplink ethernet5 to `USW-Lite-16-PoE` switch.
 - [x] Update the switch profile for the port on the `USW-Lite-16-PoE` switch to be used for the uplink from the `MikroTik CRS304-4XG-IN` switch.
 - [x] Setup Pihole Unbound for DNS.
-- [ ] Recreate or migrate the Pihole/DNS VM to a different host
-- [ ] Update DNS records in [DNS Policy Table](https://192.168.2.231/network/default/settings/policy-table?preset=dns-records).
-- [ ] Install esxi-ms-a2-03 on 172.30.10.x.
+- [x] Recreate or migrate the Pihole/DNS VM to a different host
+- [ ] Update PiHole conf and set the dns.vcf.lab record to 192.168.10.2.
+- [x] Update DNS records in [DNS Policy Table](https://192.168.2.231/network/default/settings/policy-table?preset=dns-records).
+- [x] Create a bootable usb drive with ESXi 9.
+- [ ] Install ESXi 9 on all 3 esxi-ms-a2-XX hosts.
+- [ ] Make sure switch port is configured for jumbo frames
 - [ ] Speed test 10gbe ports

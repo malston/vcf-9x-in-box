@@ -59,6 +59,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 **📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)**.
 
 This guide provides:
+
 * Complete workflow from configuration to VCF deployment
 * Step-by-step breakdown of each script and what it does
 * How each step depends on the previous step
@@ -212,6 +213,7 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
   * VCF Operations components (vROps, vRA, vRSLCM, etc.)
 
 **Version Compatibility:**
+
 * ESXi version MUST match the version specified in VCF 9.0.0.0 release notes
 * All physical ESXi hosts must run the same ESXi build before VCF deployment
 * VCF Installer will manage ESXi versions post-deployment via VCF lifecycle management
@@ -341,22 +343,22 @@ For single or dual-host deployments, run this script **proactively** during VCF 
 
 * Here are the following IP Addresses/DNS entries that you will need for initial setup (NSX Edge, Supervisor/VKS are optional)
 
-| Hostname   | FQDN                | IP Address  | Function                                 |
-|------------|---------------------|-------------|------------------------------------------|
-| dns        | dns.vcf.lab         | 172.30.0.2  | DNS Server                               |
-| esx01      | esx01.vcf.lab       | 172.30.0.10 | Physical ESX-1 Server                    |
-| esx02      | esx02.vcf.lab       | 172.30.0.11 | Physical ESX-2 Server                    |
-| esx03      | esx03.vcf.lab       | 172.30.0.12 | Physical ESX-3 Server                    |
-| vc01       | vc01.vcf.lab        | 172.30.0.13 | vCenter Server for Management Domain     |
-| vcf01      | vcf01.vcf.lab       | 172.30.0.14 | VCF Operations                           |
-| nsx01      | nsx01.vcf.lab       | 172.30.0.15 | NSX Manager VIP for Management Domain    |
-| nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16 | NSX Manager for Management Domain        |
-| edge01a    | edge01a.vcf.lab     | 172.30.0.17 | NSX Edge 1a for Management Domain        |
-| edge01b    | edge01b.vcf.lab     | 172.30.0.18 | NSX Edge 1b for Management Domain        |
-| opsfm01    | opsfm01.vcf.lab     | 172.30.0.19 | VCF Operations Fleet Manager             |
-| opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20 | VCF Operations Proxy Collector           |
-| sddcm01    | sddcm01.vcf.lab     | 172.30.0.21 | VCF Installer / SDDC Manager             |
-| auto01     | auto01.vcf.lab      | 172.30.0.30 | VCF Automation                           |
+| Hostname   | FQDN                | IP Address   | Function                                 |
+|------------|---------------------|--------------|------------------------------------------|
+| dns        | dns.vcf.lab         | 192.168.10.2 | DNS Server                               |
+| esx01      | esx01.vcf.lab       | 172.30.0.10  | Physical ESX-1 Server                    |
+| esx02      | esx02.vcf.lab       | 172.30.0.11  | Physical ESX-2 Server                    |
+| esx03      | esx03.vcf.lab       | 172.30.0.12  | Physical ESX-3 Server                    |
+| vc01       | vc01.vcf.lab        | 172.30.0.13  | vCenter Server for Management Domain     |
+| vcf01      | vcf01.vcf.lab       | 172.30.0.14  | VCF Operations                           |
+| nsx01      | nsx01.vcf.lab       | 172.30.0.15  | NSX Manager VIP for Management Domain    |
+| nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16  | NSX Manager for Management Domain        |
+| edge01a    | edge01a.vcf.lab     | 172.30.0.17  | NSX Edge 1a for Management Domain        |
+| edge01b    | edge01b.vcf.lab     | 172.30.0.18  | NSX Edge 1b for Management Domain        |
+| opsfm01    | opsfm01.vcf.lab     | 172.30.0.19  | VCF Operations Fleet Manager             |
+| opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20  | VCF Operations Proxy Collector           |
+| sddcm01    | sddcm01.vcf.lab     | 172.30.0.21  | VCF Installer / SDDC Manager             |
+| auto01     | auto01.vcf.lab      | 172.30.0.30  | VCF Automation                           |
 
 ## Installation
 
@@ -476,7 +478,7 @@ systemctl restart unbound
 
 rm -f /etc/resolv.conf
 cat > /etc/resolv.conf <<EOF
-nameserver 172.30.0.2
+nameserver 192.168.10.2
 search vcf.lab
 EOF
 ```

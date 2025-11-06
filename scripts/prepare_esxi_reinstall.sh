@@ -18,7 +18,7 @@ WORKING_DIR="./esxi-reinstall-temp"
 NEW_NETWORK="172.30.0.0/24"
 NEW_GATEWAY="172.30.0.1"
 NEW_VLAN="30"
-NEW_DNS="172.30.0.2"  # Update this if using different DNS
+NEW_DNS="192.168.10.2"  # Update this if using different DNS
 NEW_DOMAIN="vcf.lab"
 NTP_SERVER="pool.ntp.org"
 
@@ -417,7 +417,7 @@ Verify:
 Ensure your MikroTik CRS304-4XG-IN has:
 - VLAN 30 configured and tagged on appropriate ports
 - Gateway 172.30.0.1 accessible on VLAN 30
-- DNS server (172.30.0.2 or as configured) reachable
+- DNS server (192.168.10.2 or as configured) reachable
 - Jumbo frames (MTU 9000) enabled if desired
 
 EOF

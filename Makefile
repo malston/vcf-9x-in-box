@@ -132,7 +132,7 @@ info: ## Show project information
 	@echo "  Network:     172.30.0.0/24"
 	@echo "  Gateway:     172.30.0.1"
 	@echo "  VLAN:        30"
-	@echo "  DNS:         172.30.0.2"
+	@echo "  DNS:         192.168.10.2"
 
 all: clean sync generate ## Clean, sync, and generate all configs
 	@echo "$(GREEN)✓ All tasks complete$(NC)"

@@ -24,7 +24,7 @@
     },
     "dnsSpec": {
         "nameservers": [
-            "172.30.0.2"
+            "192.168.10.2"
         ],
         "subdomain": "vcf.lab"
     },
@@ -34,7 +34,7 @@
     "vcenterSpec": {
         "vcenterHostname": "vc01",
         "rootVcenterPassword": "VMware1!VMware1!",
-        "vmSize": "tiny",
+        "vmSize": "small",
         "storageSize": "",
         "adminUserSsoPassword": "VMware1!VMware1!",
         "ssoDomain": "vsphere.local",

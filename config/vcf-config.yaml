@@ -7,7 +7,7 @@ network:
   netmask: "255.255.255.0"
   gateway: "172.30.0.1"
   vlan_id: "30"
-  dns_server: "172.30.0.2"
+  dns_server: "192.168.10.2"
   dns_domain: "vcf.lab"
   vswitch_mtu: "9000"
 

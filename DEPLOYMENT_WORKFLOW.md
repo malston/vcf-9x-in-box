@@ -103,12 +103,13 @@ Each step **depends on the previous step** being completed successfully:
 **File:** `config/vcf-config.yaml`
 
 **What It Defines:**
+
 ```yaml
 # Network settings used by ALL hosts
 network:
   gateway: "172.30.0.1"
   vlan_id: "30"
-  dns_server: "172.30.0.2"
+  dns_server: "192.168.10.2"
 
 # Common settings for ALL hosts
 common:
@@ -126,6 +127,7 @@ hosts:
 ```
 
 **Action Required:**
+
 1. Edit `config/vcf-config.yaml`
 2. Update IPs, hostnames, passwords
 3. **CRITICAL:** Update NVMe device identifiers (see [Finding NVMe Identifiers](#finding-nvme-identifiers))
@@ -139,12 +141,14 @@ hosts:
 **Script:** `scripts/generate_kickstart.py`
 
 **What It Does:**
+
 1. Reads `config/vcf-config.yaml`
 2. Loads Jinja2 template `config/ks-template.cfg.j2`
 3. Generates one kickstart config per host
 4. Writes configs to `config/` directory
 
 **How It Works:**
+
 ```python
 # Template has variables like {{ host_ip }}, {{ hostname }}, etc.
 # Script replaces them with values from YAML for each host
@@ -163,6 +167,7 @@ Output: config/ks-esx03.cfg
 ```
 
 **Commands:**
+
 ```bash
 # Generate all kickstart configs
 make generate
@@ -177,15 +182,18 @@ uv run scripts/generate_kickstart.py all
 ```
 
 **Input Files:**
+
 - `config/vcf-config.yaml` (configuration)
 - `config/ks-template.cfg.j2` (Jinja2 template)
 
 **Output Files:**
+
 - `config/ks-esx01.cfg` (ESXi kickstart for host 1)
 - `config/ks-esx02.cfg` (ESXi kickstart for host 2)
 - `config/ks-esx03.cfg` (ESXi kickstart for host 3)
 
 **What's In The Kickstart Files:**
+
 ```bash
 # ESXi installation settings
 install --disk=<NVMe device> --overwritevmfs
@@ -207,6 +215,7 @@ network --bootproto=static --ip=172.30.0.10 --netmask=255.255.255.0 \
 ```
 
 **Dry Run (Preview):**
+
 ```bash
 # See what would be generated without writing files
 uv run scripts/generate_kickstart.py --help
@@ -219,12 +228,14 @@ uv run scripts/generate_kickstart.py --help
 **Script:** `scripts/create_esxi_usb.py`
 
 **What It Does:**
+
 1. Takes ESXi 9.0.0.0 ISO
 2. Writes ISO to USB drive
 3. Copies kickstart config to USB as `KS.CFG`
 4. Modifies `BOOT.CFG` to use kickstart (automated installation)
 
 **How It Works:**
+
 ```
 Input:
   - ESXi ISO: VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso
@@ -246,6 +257,7 @@ Output:
 ```
 
 **Commands:**
+
 ```bash
 # Dry run first (no root required, preview only)
 uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
@@ -267,14 +279,17 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 ```
 
 **Input Files:**
+
 - ESXi ISO (from `esxi_iso_path` in config or `-i` flag)
 - Kickstart config: `config/ks-esx0X.cfg`
 - USB device: `/dev/diskX`
 
 **Output:**
+
 - Bootable USB drive ready to install ESXi on specific host
 
 **What The USB Contains After Creation:**
+
 ```
 /Volumes/ESXi/
 ├── KS.CFG                    # Your kickstart config (ks-esx01.cfg)
@@ -288,6 +303,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 ```
 
 **USB Usage:**
+
 1. Insert USB into MS-A2 host
 2. Power on host
 3. Press F11 (or boot menu key)
@@ -305,6 +321,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 **What Happens Automatically:**
 
 #### 4.1 Initial ESXi Installation (Reboot 1)
+
 ```
 1. Boot from USB
 2. ESXi installer reads KS.CFG from USB
@@ -316,6 +333,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 ```
 
 #### 4.2 Firstboot Configuration (Reboot 2)
+
 ```
 8. ESXi boots for first time
 9. Runs %firstboot section from kickstart
@@ -331,6 +349,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 ```
 
 #### 4.3 Final State
+
 ```
 12. ESXi fully configured and running
 13. Accessible via:
@@ -341,6 +360,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
 ```
 
 **Verification:**
+
 ```bash
 # From your management system
 ping 172.30.0.10
@@ -362,6 +382,7 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 ```
 
 **Result:** Three ESXi hosts ready for VCF deployment:
+
 - esx01.vcf.lab (172.30.0.10) ✓
 - esx02.vcf.lab (172.30.0.11) ✓
 - esx03.vcf.lab (172.30.0.12) ✓
@@ -373,18 +394,21 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 **Script:** `scripts/deploy_vcf_installer.sh`
 
 **What It Does:**
+
 1. Uses OVFTool to deploy VCF Installer OVA
 2. Deploys to one of the ESXi hosts (typically esx01)
 3. Configures networking for VCF Installer
 4. Powers on the VM
 
 **Why This Step:**
+
 - VCF Installer is a **VM appliance** (not installed on bare metal)
 - Needs to run on one of the ESXi hosts
 - Acts as orchestrator for entire VCF deployment
 - This is why **ESXi must be installed first** (chicken/egg)
 
 **How It Works:**
+
 ```
 Prerequisites:
   - ESXi 9.0.0.0 running on esx01 (172.30.0.10)
@@ -399,7 +423,7 @@ Process:
   4. Configures VM properties:
      - IP: 172.30.0.21
      - Gateway: 172.30.0.1
-     - DNS: 172.30.0.2
+     - DNS: 192.168.10.2
      - Hostname: sddcm01.vcf.lab
      - Root password
      - Admin password
@@ -412,6 +436,7 @@ Result:
 ```
 
 **Commands:**
+
 ```bash
 # Edit script first (lines 19-35)
 vim scripts/deploy_vcf_installer.sh
@@ -422,7 +447,7 @@ ESXI_USERNAME="root"
 ESXI_PASSWORD="VMware1!"
 VCFI_IP="172.30.0.21"            # VCF Installer IP
 VCFI_GATEWAY="172.30.0.1"
-VCFI_DNS="172.30.0.2"
+VCFI_DNS="192.168.10.2"
 VCFI_HOSTNAME="sddcm01.vcf.lab"
 VCFI_ROOT_PASSWORD="VMware1!VMware1!"
 VCFI_ADMIN_PASSWORD="VMware1!VMware1!"
@@ -437,14 +462,17 @@ chmod +x deploy_vcf_installer.sh
 ```
 
 **Input Files:**
+
 - VCF Installer OVA: `VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova`
 - Target ESXi host: `esx01.vcf.lab` (172.30.0.10)
 
 **Output:**
+
 - VCF Installer VM running at 172.30.0.21
-- UI accessible at https://sddcm01.vcf.lab
+- UI accessible at <https://sddcm01.vcf.lab>
 
 **Verification:**
+
 ```bash
 # Ping VCF Installer
 ping 172.30.0.21
@@ -468,17 +496,20 @@ vim-cmd vmsvc/power.getstate <vmid>
 **Script:** `scripts/setup_vcf_installer.ps1`
 
 **What It Does:**
+
 1. Connects to VCF Installer via API
 2. Configures offline depot settings
 3. Disables HTTPS requirement (HTTP OK for lab)
 4. Prepares VCF Installer for deployment
 
 **Why This Step:**
+
 - VCF Installer needs to know where to find binaries (Offline Depot)
 - By default requires HTTPS, but lab setups often use HTTP
 - Some settings can't be changed via UI, require API calls
 
 **How It Works:**
+
 ```powershell
 Process:
   1. Import PowerCLI module
@@ -498,6 +529,7 @@ Result:
 ```
 
 **Commands:**
+
 ```powershell
 # Edit script first (lines 10-15)
 # Set:
@@ -512,11 +544,13 @@ pwsh ./setup_vcf_installer.ps1
 ```
 
 **Input:**
+
 - VCF Installer at 172.30.0.21
 - Admin credentials
 - Offline Depot URL
 
 **Output:**
+
 - VCF Installer configured and ready
 - Can now connect to depot and download binaries
 
@@ -529,6 +563,7 @@ pwsh ./setup_vcf_installer.ps1
 **What Happens:**
 
 #### 7.1 Connect to Offline Depot (via UI)
+
 ```
 1. Login to https://sddcm01.vcf.lab
    - Username: admin@local
@@ -552,6 +587,7 @@ pwsh ./setup_vcf_installer.ps1
 ```
 
 #### 7.2 Upload VCF Deployment Manifest
+
 ```
 6. Return to VCF Installer homepage
 
@@ -574,6 +610,7 @@ pwsh ./setup_vcf_installer.ps1
 ```
 
 **What The Manifest Contains:**
+
 ```json
 {
   "workflowType": "VCF",
@@ -585,7 +622,7 @@ pwsh ./setup_vcf_installer.ps1
   ],
   "vcenterSpec": {
     "vcenterHostname": "vc01",
-    "vmSize": "tiny",
+    "vmSize": "small",
     ...
   },
   "nsxtSpec": {
@@ -601,6 +638,7 @@ pwsh ./setup_vcf_installer.ps1
 ```
 
 #### 7.3 VCF Deployment Process (3-4 hours)
+
 ```
 Deployment Phases:
 
@@ -651,6 +689,7 @@ Phase 7: Finalization
 ```
 
 #### 7.4 Two-Node Specific: Storage Policy Fix
+
 ```
 IF using vcf90-two-node.json:
 
@@ -670,6 +709,7 @@ IF using vcf90-three-node.json:
 ```
 
 #### 7.5 Monitoring Deployment
+
 ```
 Monitor progress via VCF Installer UI:
   - Shows current phase
@@ -736,6 +776,7 @@ VCF Management Domain Deployed            # Complete VCF environment
 **Problem:** Don't know NVMe device identifiers for kickstart config
 
 **Solution:**
+
 1. Create basic USB with ESXi ISO (without kickstart)
 2. Boot MS-A2 from USB
 3. Press ALT+F1 at ESXi installer screen
@@ -750,6 +791,7 @@ VCF Management Domain Deployed            # Complete VCF environment
 ### Common Issues
 
 #### Issue: Kickstart generation fails
+
 ```bash
 # Check YAML syntax
 uv run python -c "import yaml; yaml.safe_load(open('config/vcf-config.yaml'))"
@@ -759,6 +801,7 @@ uv run scripts/generate_kickstart.py all -v
 ```
 
 #### Issue: USB creation fails with permission error
+
 ```bash
 # Must use sudo
 sudo make usb-create USB=/dev/disk2 HOST=1
@@ -768,6 +811,7 @@ make usb-list
 ```
 
 #### Issue: ESXi doesn't boot from USB
+
 ```bash
 # Verify BOOT.CFG was modified
 # Mount USB and check:
@@ -776,6 +820,7 @@ cat /Volumes/ESXi/EFI/BOOT/BOOT.CFG | grep kernelopt
 ```
 
 #### Issue: Kickstart doesn't run (interactive install starts)
+
 ```bash
 # Verify KS.CFG exists on USB root
 ls /Volumes/ESXi/KS.CFG
@@ -785,6 +830,7 @@ cat /Volumes/ESXi/EFI/BOOT/BOOT.CFG | grep "ks=usb"
 ```
 
 #### Issue: VCF Installer deployment fails
+
 ```bash
 # Verify ESXi version
 ssh root@172.30.0.10 "vmware -v"
@@ -798,11 +844,12 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 ```
 
 #### Issue: VCF deployment validation fails
+
 ```bash
 # Check DNS resolution
-nslookup esx01.vcf.lab 172.30.0.2
-nslookup esx02.vcf.lab 172.30.0.2
-nslookup esx03.vcf.lab 172.30.0.2
+nslookup esx01.vcf.lab 192.168.10.2
+nslookup esx02.vcf.lab 192.168.10.2
+nslookup esx03.vcf.lab 192.168.10.2
 
 # Check VLAN configuration on switch
 # Verify VLANs 30, 40, 50, 60 are created and trunked

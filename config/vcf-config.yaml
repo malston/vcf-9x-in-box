@@ -15,13 +15,13 @@ network:
 common:
   ntp_server: "pool.ntp.org"
   root_password: "VMware1!"
-  ssh_root_key: ""  # Optional: Add SSH public key here
+  ssh_root_key: "" # Optional: Add SSH public key here
 
   # ESXi ISO Configuration
   # IMPORTANT: Use ESXi 9.0.0.0 build 24755229 (or the version specified in VCF 9.0.0.0 release notes)
   # This version MUST be compatible with VCF 9.0.0.0
   # Download from: https://support.broadcom.com/
-  esxi_iso_path: "/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+  esxi_iso_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
 
 # ESXi Host Configurations
 hosts:
@@ -47,7 +47,6 @@ hosts:
     install_disk: "t10.NVMe____PLACEHOLDER_INSTALL_DISK__________________CHANGE_ME"
     tiering_disk: "t10.NVMe____PLACEHOLDER_TIERING_DISK______________CHANGE_ME"
     datastore_name: "local-vmfs-datastore-3"
-
 # Notes:
 # - To find NVMe device identifiers, boot ESXi installer and run 'vdq -q'
 # - All IPs should be on the same subnet as specified in network.subnet

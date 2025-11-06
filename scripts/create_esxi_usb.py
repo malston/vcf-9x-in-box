@@ -21,11 +21,11 @@ except ImportError:
 
 # Color output
 class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
 
 def load_config(config_file: Path) -> Dict[str, Any]:
@@ -35,22 +35,24 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             config = yaml.safe_load(f)
 
         # Validate required sections
-        required_sections = ['network', 'common', 'hosts']
+        required_sections = ["network", "common", "hosts"]
         for section in required_sections:
             if section not in config:
-                print(f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}")
+                print(
+                    f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}"
+                )
                 sys.exit(1)
 
         # Convert hosts list to dict for easier access
         hosts_dict = {}
-        for host in config['hosts']:
-            hosts_dict[host['number']] = host
+        for host in config["hosts"]:
+            hosts_dict[host["number"]] = host
 
-        config['hosts_dict'] = hosts_dict
+        config["hosts_dict"] = hosts_dict
         return config
 
     except yaml.YAMLError as e:
@@ -61,7 +63,9 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
 
-def run_command(cmd: list, description: str = "", capture_output: bool = False) -> Optional[str]:
+def run_command(
+    cmd: list, description: str = "", capture_output: bool = False
+) -> Optional[str]:
     """Run a shell command and handle errors"""
     try:
         if capture_output:
@@ -106,7 +110,9 @@ def verify_usb_device(device: str, skip_confirm: bool = False, dry_run: bool = F
     # Check if device exists
     if not Path(device).exists():
         if dry_run:
-            print(f"{Colors.YELLOW}⚠{Colors.NC} Device {device} does not exist (would fail in real run)")
+            print(
+                f"{Colors.YELLOW}⚠{Colors.NC} Device {device} does not exist (would fail in real run)"
+            )
             return
         else:
             print(f"{Colors.RED}ERROR: Device {device} does not exist{Colors.NC}")
@@ -139,10 +145,14 @@ def verify_usb_device(device: str, skip_confirm: bool = False, dry_run: bool = F
 
         # Safety check - ensure it's removable media
         if protocol != "USB" and not skip_confirm and not dry_run:
-            print(f"{Colors.YELLOW}WARNING: Device does not appear to be USB (Protocol: {protocol}){Colors.NC}")
+            print(
+                f"{Colors.YELLOW}WARNING: Device does not appear to be USB (Protocol: {protocol}){Colors.NC}"
+            )
             confirm_action("Are you sure you want to continue?")
         elif protocol != "USB" and dry_run:
-            print(f"{Colors.YELLOW}WARNING: Device does not appear to be USB (Protocol: {protocol}){Colors.NC}")
+            print(
+                f"{Colors.YELLOW}WARNING: Device does not appear to be USB (Protocol: {protocol}){Colors.NC}"
+            )
 
     except Exception as e:
         print(f"{Colors.RED}ERROR: Unable to get info for device {device}{Colors.NC}")
@@ -156,29 +166,43 @@ class USBCreator:
         self.config = config
         self.config_dir = config_dir
 
-    def create_usb(self, usb_device: str, host_num: int, iso_path: str,
-                   skip_confirm: bool = False, dry_run: bool = False):
+    def create_usb(
+        self,
+        usb_device: str,
+        host_num: int,
+        iso_path: str,
+        skip_confirm: bool = False,
+        dry_run: bool = False,
+    ):
         """Create bootable ESXi USB for specific host"""
 
         if dry_run:
             print(f"{Colors.YELLOW}========================================{Colors.NC}")
             print(f"{Colors.YELLOW}DRY RUN MODE - No changes will be made{Colors.NC}")
-            print(f"{Colors.YELLOW}========================================{Colors.NC}\n")
+            print(
+                f"{Colors.YELLOW}========================================{Colors.NC}\n"
+            )
 
         # Validate host number
-        if host_num not in self.config['hosts_dict']:
-            print(f"{Colors.RED}ERROR: Host {host_num} not found in config file{Colors.NC}")
+        if host_num not in self.config["hosts_dict"]:
+            print(
+                f"{Colors.RED}ERROR: Host {host_num} not found in config file{Colors.NC}"
+            )
             print(f"Available hosts: {sorted(self.config['hosts_dict'].keys())}")
             sys.exit(1)
 
-        host_config = self.config['hosts_dict'][host_num]
+        host_config = self.config["hosts_dict"][host_num]
 
         # Verify ESXi ISO exists
         if not Path(iso_path).exists():
             if dry_run:
-                print(f"{Colors.YELLOW}⚠{Colors.NC} ESXi ISO not found (would fail): {iso_path}")
+                print(
+                    f"{Colors.YELLOW}⚠{Colors.NC} ESXi ISO not found (would fail): {iso_path}"
+                )
             else:
-                print(f"{Colors.RED}ERROR: ESXi ISO not found at: {iso_path}{Colors.NC}")
+                print(
+                    f"{Colors.RED}ERROR: ESXi ISO not found at: {iso_path}{Colors.NC}"
+                )
                 print("Use -i flag to specify the correct path")
                 sys.exit(1)
         else:
@@ -188,13 +212,19 @@ class USBCreator:
         kickstart_file = self.config_dir / f"ks-esx0{host_num}.cfg"
         if not kickstart_file.exists():
             if dry_run:
-                print(f"{Colors.YELLOW}⚠{Colors.NC} Kickstart config not found (would fail): {kickstart_file}")
+                print(
+                    f"{Colors.YELLOW}⚠{Colors.NC} Kickstart config not found (would fail): {kickstart_file}"
+                )
             else:
-                print(f"{Colors.RED}ERROR: Kickstart config not found: {kickstart_file}{Colors.NC}")
+                print(
+                    f"{Colors.RED}ERROR: Kickstart config not found: {kickstart_file}{Colors.NC}"
+                )
                 print("Run 'make generate' first to generate kickstart configs")
                 sys.exit(1)
         else:
-            print(f"{Colors.GREEN}✓{Colors.NC} Found kickstart config: {kickstart_file}")
+            print(
+                f"{Colors.GREEN}✓{Colors.NC} Found kickstart config: {kickstart_file}"
+            )
 
         # Verify USB device
         verify_usb_device(usb_device, skip_confirm, dry_run)
@@ -202,7 +232,9 @@ class USBCreator:
         # Final confirmation
         if not skip_confirm and not dry_run:
             print(f"{Colors.RED}========================================{Colors.NC}")
-            print(f"{Colors.RED}WARNING: ALL DATA ON {usb_device} WILL BE ERASED!{Colors.NC}")
+            print(
+                f"{Colors.RED}WARNING: ALL DATA ON {usb_device} WILL BE ERASED!{Colors.NC}"
+            )
             print(f"{Colors.RED}========================================{Colors.NC}")
             print()
             print("Configuration:")
@@ -226,33 +258,50 @@ class USBCreator:
 
         # Unmount the USB device
         if dry_run:
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would unmount USB device: {usb_device}")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would unmount USB device: {usb_device}"
+            )
         else:
             print(f"{Colors.YELLOW}Unmounting USB device...{Colors.NC}")
-            subprocess.run(["diskutil", "unmountDisk", usb_device],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                ["diskutil", "unmountDisk", usb_device],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
         # Write ISO to USB
         raw_device = usb_device.replace("disk", "rdisk")
         if dry_run:
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would write ESXi ISO to {raw_device}")
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Command: dd if={iso_path} of={raw_device} bs=1m")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would write ESXi ISO to {raw_device}"
+            )
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Command: dd if={iso_path} of={raw_device} bs=1m"
+            )
         else:
-            print(f"{Colors.YELLOW}Writing ESXi ISO to USB device (this will take several minutes)...{Colors.NC}")
+            print(
+                f"{Colors.YELLOW}Writing ESXi ISO to USB device (this will take several minutes)...{Colors.NC}"
+            )
             print(f"{Colors.BLUE}Progress: Writing ISO to {usb_device}...{Colors.NC}")
             run_command(["dd", f"if={iso_path}", f"of={raw_device}", "bs=1m"])
             print(f"{Colors.GREEN}✓{Colors.NC} ISO written to USB device")
 
         # Wait for system to recognize filesystem
         if dry_run:
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would wait 3 seconds for filesystem recognition")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would wait 3 seconds for filesystem recognition"
+            )
         else:
-            print(f"{Colors.YELLOW}Waiting for filesystem to be recognized...{Colors.NC}")
+            print(
+                f"{Colors.YELLOW}Waiting for filesystem to be recognized...{Colors.NC}"
+            )
             time.sleep(3)
 
         # Mount the USB device
         if dry_run:
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would mount USB partition: {usb_device}s1")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would mount USB partition: {usb_device}s1"
+            )
         else:
             print(f"{Colors.YELLOW}Mounting USB device...{Colors.NC}")
 
@@ -261,32 +310,46 @@ class USBCreator:
 
         if dry_run:
             # Copy kickstart file
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would copy kickstart to USB: {kickstart_file.name} -> {mount_point}/KS.CFG")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would copy kickstart to USB: {kickstart_file.name} -> {mount_point}/KS.CFG"
+            )
 
             # Modify BOOT.CFG
             boot_cfg_path = Path(mount_point) / "EFI" / "BOOT" / "BOOT.CFG"
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would modify BOOT.CFG at: {boot_cfg_path}")
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would change: kernelopt=... -> kernelopt=ks=usb:/KS.CFG")
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would backup BOOT.CFG to: {boot_cfg_path}.backup")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would modify BOOT.CFG at: {boot_cfg_path}"
+            )
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would change: kernelopt=... -> kernelopt=ks=usb:/KS.CFG"
+            )
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would backup BOOT.CFG to: {boot_cfg_path}.backup"
+            )
 
             # Unmount and eject USB
             print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would sync filesystem")
             print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would unmount: {mount_point}")
-            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would eject USB device: {usb_device}")
+            print(
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would eject USB device: {usb_device}"
+            )
         else:
             try:
                 # Try to mount the partition
                 run_command(["diskutil", "mount", usb_partition])
 
                 # Get the mount point
-                output = run_command(["diskutil", "info", usb_partition], capture_output=True)
+                output = run_command(
+                    ["diskutil", "info", usb_partition], capture_output=True
+                )
                 for line in output.splitlines():
                     if "Mount Point:" in line:
                         mount_point = line.split(":", 1)[1].strip()
                         break
 
                 if not mount_point:
-                    print(f"{Colors.RED}ERROR: Could not determine mount point{Colors.NC}")
+                    print(
+                        f"{Colors.RED}ERROR: Could not determine mount point{Colors.NC}"
+                    )
                     sys.exit(1)
 
                 print(f"{Colors.GREEN}✓{Colors.NC} USB mounted at: {mount_point}")
@@ -300,10 +363,14 @@ class USBCreator:
                 # Modify BOOT.CFG
                 boot_cfg_path = Path(mount_point) / "EFI" / "BOOT" / "BOOT.CFG"
                 if not boot_cfg_path.exists():
-                    print(f"{Colors.RED}ERROR: BOOT.CFG not found at: {boot_cfg_path}{Colors.NC}")
+                    print(
+                        f"{Colors.RED}ERROR: BOOT.CFG not found at: {boot_cfg_path}{Colors.NC}"
+                    )
                     sys.exit(1)
 
-                print(f"{Colors.YELLOW}Modifying BOOT.CFG for kickstart installation...{Colors.NC}")
+                print(
+                    f"{Colors.YELLOW}Modifying BOOT.CFG for kickstart installation...{Colors.NC}"
+                )
 
                 # Backup original BOOT.CFG
                 run_command(["cp", str(boot_cfg_path), f"{boot_cfg_path}.backup"])
@@ -334,15 +401,24 @@ class USBCreator:
                 # Unmount and eject USB
                 print(f"{Colors.YELLOW}Ejecting USB device...{Colors.NC}")
                 subprocess.run(["sync"])
-                subprocess.run(["diskutil", "unmount", mount_point],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(
+                    ["diskutil", "unmount", mount_point],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 subprocess.run(["diskutil", "eject", usb_device])
                 print(f"{Colors.GREEN}✓{Colors.NC} USB device ejected")
 
         # Summary
         self._print_summary(usb_device, host_num, host_config, dry_run)
 
-    def _print_summary(self, usb_device: str, host_num: int, host_config: Dict[str, Any], dry_run: bool = False):
+    def _print_summary(
+        self,
+        usb_device: str,
+        host_num: int,
+        host_config: Dict[str, Any],
+        dry_run: bool = False,
+    ):
         """Print completion summary with next steps"""
         print(f"\n{Colors.GREEN}========================================{Colors.NC}")
         if dry_run:
@@ -386,50 +462,38 @@ Examples:
 
 To find your USB device:
   diskutil list
-        """
+        """,
     )
 
     parser.add_argument(
-        "usb_device",
-        nargs="?",
-        help="USB device path (e.g., /dev/disk2)"
+        "usb_device", nargs="?", help="USB device path (e.g., /dev/disk2)"
     )
 
     parser.add_argument(
-        "host_number",
-        nargs="?",
-        type=int,
-        help="ESXi host number (1, 2, 3, etc.)"
+        "host_number", nargs="?", type=int, help="ESXi host number (1, 2, 3, etc.)"
     )
 
+    parser.add_argument("-i", "--iso", type=Path, help="Path to ESXi ISO file")
+
     parser.add_argument(
-        "-i", "--iso",
+        "-c",
+        "--config",
         type=Path,
-        help="Path to ESXi ISO file"
+        help="Path to YAML config file (default: config/vcf-config.yaml)",
     )
 
     parser.add_argument(
-        "-c", "--config",
-        type=Path,
-        help="Path to YAML config file (default: config/vcf-config.yaml)"
-    )
-
-    parser.add_argument(
-        "-y", "--yes",
-        action="store_true",
-        help="Skip confirmation prompts"
+        "-y", "--yes", action="store_true", help="Skip confirmation prompts"
     )
 
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would be done without making any changes"
+        help="Show what would be done without making any changes",
     )
 
     parser.add_argument(
-        "--list",
-        action="store_true",
-        help="List available disk devices"
+        "--list", action="store_true", help="List available disk devices"
     )
 
     args = parser.parse_args()
@@ -463,11 +527,11 @@ To find your USB device:
     # Get ESXi ISO path from config or command line
     if args.iso:
         iso_path = str(args.iso)
-    elif 'esxi_iso_path' in config.get('common', {}):
-        iso_path = config['common']['esxi_iso_path']
+    elif "esxi_iso_path" in config.get("common", {}):
+        iso_path = config["common"]["esxi_iso_path"]
     else:
         # Default path
-        iso_path = "/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+        iso_path = "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
 
     # Print header
     print(f"{Colors.GREEN}========================================{Colors.NC}")
@@ -476,7 +540,9 @@ To find your USB device:
 
     # Create USB
     creator = USBCreator(config, config_dir)
-    creator.create_usb(args.usb_device, args.host_number, iso_path, args.yes, args.dry_run)
+    creator.create_usb(
+        args.usb_device, args.host_number, iso_path, args.yes, args.dry_run
+    )
 
 
 if __name__ == "__main__":

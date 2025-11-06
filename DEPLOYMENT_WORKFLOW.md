@@ -109,7 +109,7 @@ Each step **depends on the previous step** being completed successfully:
 network:
   gateway: "172.30.0.1"
   vlan_id: "30"
-  dns_server: "172.30.0.2"
+  dns_server: "192.168.10.2"
 
 # Common settings for ALL hosts
 common:
@@ -423,7 +423,7 @@ Process:
   4. Configures VM properties:
      - IP: 172.30.0.21
      - Gateway: 172.30.0.1
-     - DNS: 172.30.0.2
+     - DNS: 192.168.10.2
      - Hostname: sddcm01.vcf.lab
      - Root password
      - Admin password
@@ -629,7 +629,7 @@ uv run scripts/setup_vcf_installer.py
   ],
   "vcenterSpec": {
     "vcenterHostname": "vc01",
-    "vmSize": "tiny",
+    "vmSize": "small",
     ...
   },
   "nsxtSpec": {
@@ -859,9 +859,9 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 
 ```bash
 # Check DNS resolution
-nslookup esx01.vcf.lab 172.30.0.2
-nslookup esx02.vcf.lab 172.30.0.2
-nslookup esx03.vcf.lab 172.30.0.2
+nslookup esx01.vcf.lab 192.168.10.2
+nslookup esx02.vcf.lab 192.168.10.2
+nslookup esx03.vcf.lab 192.168.10.2
 
 # Check VLAN configuration on switch
 # Verify VLANs 30, 40, 50, 60 are created and trunked

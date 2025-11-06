@@ -26,7 +26,11 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Changelog
 
-* **10/17/2024**
+* **10/20/25**
+  * Updated VCF Installer configuration script to include VCF 9.0.1 enhancements
+  * Updated blog post references
+
+* **10/17/2025**
   * **Python Standardization:** Converted all scripts to Python for consistency
     * `deploy_vcf_installer.sh` → `deploy_vcf_installer.py` (with YAML config support)
     * `setup_vcf_installer.ps1` → `setup_vcf_installer.py` (using pyvmomi SDK)
@@ -38,7 +42,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
   * **FAQ Added:** Created comprehensive FAQ.md with common questions and detailed answers
   * **Dependencies:** Added pyvmomi and requests to pyproject.toml
 
-* **10/16/2024**
+* **10/16/25**
   * **YAML Configuration:** All settings now in easy-to-edit `vcf-config.yaml` file
   * **Comprehensive Workflow Guide:** Added `DEPLOYMENT_WORKFLOW.md` connecting all deployment steps
   * **ESXi Version Documentation:** Clearly documented ESXi 9.0.0.0 build 24755229 requirement throughout
@@ -81,6 +85,7 @@ See the full FAQ for detailed answers and many more questions.
 **📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)**.
 
 This guide provides:
+
 * Complete workflow from configuration to VCF deployment
 * Step-by-step breakdown of each script and what it does
 * How each step depends on the previous step
@@ -234,13 +239,14 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
   * VCF Operations components (vROps, vRA, vRSLCM, etc.)
 
 **Version Compatibility:**
+
 * ESXi version MUST match the version specified in VCF 9.0.0.0 release notes
 * All physical ESXi hosts must run the same ESXi build before VCF deployment
 * VCF Installer will manage ESXi versions post-deployment via VCF lifecycle management
 
 ## Build of Materials (BOM)
 
-* [VMware Cloud Foundation (VCF) 9.0.0.0](https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Cloud%20Foundation&displayGroup=VMware%20Cloud%20Foundation%209&release=9.0.0.0&os=&servicePk=&language=EN)
+* [VMware Cloud Foundation (VCF) 9.0.1.0](https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Cloud%20Foundation&displayGroup=VMware%20Cloud%20Foundation%209&release=9.0.1.0&os=&servicePk=&language=EN)
 * [2 x Minisforum MS-A2 (7940HX) Barebones](https://amzn.to/46xuK3X)
   * [1 x Crucial 128GB Kit (2x64GB) DDR5 SODIMM](https://amzn.to/4bcpXFJ)
   * [2 x Dual 64GB DDR5 SODIMM (128GB)](https://amzn.to/4bcpXFJ)
@@ -413,22 +419,22 @@ For two-node deployments **ONLY**, run this script **immediately after starting 
 
 * Here are the following IP Addresses/DNS entries that you will need for initial setup (NSX Edge, Supervisor/VKS are optional)
 
-| Hostname   | FQDN                | IP Address  | Function                                 |
-|------------|---------------------|-------------|------------------------------------------|
-| dns        | dns.vcf.lab         | 172.30.0.2  | DNS Server                               |
-| esx01      | esx01.vcf.lab       | 172.30.0.10 | Physical ESX-1 Server                    |
-| esx02      | esx02.vcf.lab       | 172.30.0.11 | Physical ESX-2 Server                    |
-| esx03      | esx03.vcf.lab       | 172.30.0.12 | Physical ESX-3 Server                    |
-| vc01       | vc01.vcf.lab        | 172.30.0.13 | vCenter Server for Management Domain     |
-| vcf01      | vcf01.vcf.lab       | 172.30.0.14 | VCF Operations                           |
-| nsx01      | nsx01.vcf.lab       | 172.30.0.15 | NSX Manager VIP for Management Domain    |
-| nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16 | NSX Manager for Management Domain        |
-| edge01a    | edge01a.vcf.lab     | 172.30.0.17 | NSX Edge 1a for Management Domain        |
-| edge01b    | edge01b.vcf.lab     | 172.30.0.18 | NSX Edge 1b for Management Domain        |
-| opsfm01    | opsfm01.vcf.lab     | 172.30.0.19 | VCF Operations Fleet Manager             |
-| opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20 | VCF Operations Proxy Collector           |
-| sddcm01    | sddcm01.vcf.lab     | 172.30.0.21 | VCF Installer / SDDC Manager             |
-| auto01     | auto01.vcf.lab      | 172.30.0.30 | VCF Automation                           |
+| Hostname   | FQDN                | IP Address   | Function                                 |
+|------------|---------------------|--------------|------------------------------------------|
+| dns        | dns.vcf.lab         | 192.168.10.2 | DNS Server                               |
+| esx01      | esx01.vcf.lab       | 172.30.0.10  | Physical ESX-1 Server                    |
+| esx02      | esx02.vcf.lab       | 172.30.0.11  | Physical ESX-2 Server                    |
+| esx03      | esx03.vcf.lab       | 172.30.0.12  | Physical ESX-3 Server                    |
+| vc01       | vc01.vcf.lab        | 172.30.0.13  | vCenter Server for Management Domain     |
+| vcf01      | vcf01.vcf.lab       | 172.30.0.14  | VCF Operations                           |
+| nsx01      | nsx01.vcf.lab       | 172.30.0.15  | NSX Manager VIP for Management Domain    |
+| nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16  | NSX Manager for Management Domain        |
+| edge01a    | edge01a.vcf.lab     | 172.30.0.17  | NSX Edge 1a for Management Domain        |
+| edge01b    | edge01b.vcf.lab     | 172.30.0.18  | NSX Edge 1b for Management Domain        |
+| opsfm01    | opsfm01.vcf.lab     | 172.30.0.19  | VCF Operations Fleet Manager             |
+| opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20  | VCF Operations Proxy Collector           |
+| sddcm01    | sddcm01.vcf.lab     | 172.30.0.21  | VCF Installer / SDDC Manager             |
+| auto01     | auto01.vcf.lab      | 172.30.0.30  | VCF Automation                           |
 
 ## Installation
 
@@ -548,7 +554,7 @@ systemctl restart unbound
 
 rm -f /etc/resolv.conf
 cat > /etc/resolv.conf <<EOF
-nameserver 172.30.0.2
+nameserver 192.168.10.2
 search vcf.lab
 EOF
 ```
@@ -691,6 +697,13 @@ Now that you have a fully functional VCF 9 Fleet fully deployed, here are some t
 * 📦 [Configuring vSphere Kubernetes Service (VKS)](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vsphere-kubernetes-service-vks.html)
 * ⚙️ [Configuring VCF Automation](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vcf-automation.html)
 * 🔐 [Configuring External IdP for Multiple VCF Automation Organizations](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-external-idp-for-multiple-vcf-automation-organizations.html)
+* 🧠 Configuring Private AI Services (PAIS)
+  * [Installing PAIS](https://williamlam.com/2025/09/ms-a2-vcf-9-0-lab-installing-vmware-private-ai-services-pais.html)
+  * [Configuring Data Services Manager (DSM) for PAIS](https://williamlam.com/2025/09/ms-a2-vcf-9-0-lab-configuring-data-services-manager-dsm-for-vmware-private-ai-services-pais.html)
+  * [Configuring Authentik Identity Provider PAIS](https://williamlam.com/2025/09/ms-a2-vcf-9-0-lab-configuring-authentik-identity-provider-vmware-for-private-ai-services-pais.html)
+  * [Configuring Model Store using Harbor for PAIS](https://williamlam.com/2025/09/ms-a2-vcf-9-0-lab-configuring-model-store-using-harbor-for-vmware-for-private-ai-services-pais.html)
+  * [Deploying PAIS](https://williamlam.com/2025/10/ms-a2-vcf-9-0-lab-deploying-vmware-private-ai-services-pais.html)
+  * [Deploying Model Endpoint with DirectPath I/O using PAIS](https://williamlam.com/2025/10/ms-a2-vcf-9-0-lab-deploying-model-endpoint-with-directpath-i-o-using-vmware-for-private-ai-services-pais.html)
 
 ## Troubleshooting
 
@@ -767,6 +780,7 @@ Now that you have a fully functional VCF 9 Fleet fully deployed, here are some t
 * [Ultimate Lab Resource for VCF 9.0](https://williamlam.com/2025/06/ultimate-lab-resource-for-vcf-9-0.html)
 * [Using HTTP with VCF 9.0 Installer for Offline Depot](https://williamlam.com/2025/06/using-http-with-vcf-9-0-installer-for-offline-depot.html)
 * [Quick Tip - Easily host VMware Cloud Foundation (VCF) Offline Depot using Python SimpleHTTPServer with Authentication](https://williamlam.com/2025/01/quick-tip-easily-host-vmware-cloud-foundation-vcf-offline-depot-using-python-simplehttpserver-with-authentication.html)
+* [Enhancement in VCF 9.0.1 to bypass vSAN ESA HCL & Host Commission 10GbE NIC Check](https://williamlam.com/2025/09/enhancement-in-vcf-9-0-1-to-bypass-vsan-esa-hcl-host-commission-10gbe-nic-check.html)
 * [Disable 10GbE NIC Pre-Check in the VCF 9.0 Installer](https://williamlam.com/2025/06/disable-10gbe-nic-pre-check-in-the-vcf-9-0-installer.html)
 * [Deploying VCF 9.0 on a single ESXi host?](https://williamlam.com/2025/06/deploying-vcf-9-0-on-a-single-esxi-host.html)
 * [vSAN ESA Disk & HCL workaround for VCF 9.0](https://williamlam.com/2025/06/vsan-esa-disk-hcl-workaround-for-vcf-9-0.html)

@@ -66,6 +66,9 @@ fi
 esxcli system settings advanced set -o /Mem/ShareForceSalting -i 0
 esxcli system settings advanced set -o /Mem/AllocGuestLargePage -i 0
 
+# vSAN Optimizations
+esxcli system settings advanced set -i 1 -o /VSAN/DOMNetworkSchedulerThrottleComponent
+
 # Configure VM Network VLAN & MTU
 esxcli network vswitch standard portgroup set -p "VM Network" -v ${MANAGEMENT_VLAN}
 esxcli network vswitch standard set -m ${MANAGEMENT_VSWITCH_MTU} -v vSwitch0

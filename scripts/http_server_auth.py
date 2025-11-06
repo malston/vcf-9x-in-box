@@ -8,7 +8,7 @@
 # Example:
 #   python3 http_server_auth.py --bind 192.168.30.4 --user vcf --password vcf123! --port 443 --directory /Volumes/Storage/Software/depot --certfile ~/cert.crt --keyfile ~/key.pem
 #   ./scripts/http_server_auth.py --bind 0.0.0.0 --user vcf --password vcf123! --port 8888 --directory /Users/markalston/Storage/Software
-#   ./scripts/http_server_auth.py --bind 0.0.0.0 --user vcf --password vcf123! --port 8888 --directory /Volumes/carbonite.markalston.net/vcf-content/Software/depot
+#   ./scripts/http_server_auth.py --bind 0.0.0.0 --user vcf --password vcf123! --port 8888 --directory /Volumes/vcf-content/Software/depot
 
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler, test

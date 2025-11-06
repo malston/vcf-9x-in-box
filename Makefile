@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create test lint format
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format
 
 # Default target
 .DEFAULT_GOAL := help
@@ -99,6 +99,35 @@ usb-create: ## Create bootable USB (usage: make usb-create USB=/dev/disk2 HOST=1
 usb-list: ## List available disk devices
 	@uv run scripts/create_esxi_usb.py --list
 
+##@ VCF Deployment
+
+deploy-vcf-installer: sync ## Deploy VCF Installer OVA to ESXi host
+	@echo "$(GREEN)Deploying VCF Installer...$(NC)"
+	@uv run scripts/deploy_vcf_installer.py $(if $(CONFIG),--config $(CONFIG),)
+	@echo "$(GREEN)✓ VCF Installer deployed$(NC)"
+
+deploy-vcf-installer-dry-run: sync ## Preview VCF Installer deployment (dry run)
+	@echo "$(YELLOW)Dry run: VCF Installer deployment$(NC)"
+	@uv run scripts/deploy_vcf_installer.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+
+setup-vcf-installer: sync ## Configure VCF Installer post-deployment
+	@echo "$(GREEN)Configuring VCF Installer...$(NC)"
+	@uv run scripts/setup_vcf_installer.py $(if $(CONFIG),--config $(CONFIG),)
+	@echo "$(GREEN)✓ VCF Installer configured$(NC)"
+
+setup-vcf-installer-dry-run: sync ## Preview VCF Installer configuration (dry run)
+	@echo "$(YELLOW)Dry run: VCF Installer configuration$(NC)"
+	@uv run scripts/setup_vcf_installer.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+
+fix-vsan-policy: sync ## Fix vSAN ESA storage policy for 2-node deployments
+	@echo "$(GREEN)Fixing vSAN storage policy...$(NC)"
+	@uv run scripts/fix_vsan_esa_default_storage_policy.py $(if $(CONFIG),--config $(CONFIG),)
+	@echo "$(GREEN)✓ vSAN storage policy fixed$(NC)"
+
+fix-vsan-policy-dry-run: sync ## Preview vSAN policy fix (dry run)
+	@echo "$(YELLOW)Dry run: vSAN storage policy fix$(NC)"
+	@uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+
 ##@ Development
 
 test: sync ## Run tests (placeholder for future)
@@ -108,6 +137,9 @@ lint: sync ## Lint Python code
 	@echo "$(GREEN)Linting Python code...$(NC)"
 	@uv run python -m py_compile scripts/generate_kickstart.py
 	@uv run python -m py_compile scripts/create_esxi_usb.py
+	@uv run python -m py_compile scripts/deploy_vcf_installer.py
+	@uv run python -m py_compile scripts/setup_vcf_installer.py
+	@uv run python -m py_compile scripts/fix_vsan_esa_default_storage_policy.py
 	@echo "$(GREEN)✓ Linting complete$(NC)"
 
 format: sync ## Format Python code (placeholder for future)

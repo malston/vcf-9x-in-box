@@ -45,13 +45,17 @@ esxcli system tierdevice create -d /vmfs/devices/disks/${NVME_TIERING_DEVICE}
 
 # Workaround required for AMD Ryzen-based CPU
 echo 'monitor_control.disable_apichv ="TRUE"' >> /etc/vmware/config
+{% if host_count >= 3 %}
 esxcli system settings advanced set -o /Mem/TierTdmNumBatches -i 32
+{% endif %}
 
-# Install vSAN ESA Mock VIB
-#esxcli network firewall ruleset set -e true -r httpClient
-#esxcli software acceptance set --level CommunitySupported
-#esxcli software vib install -v https://github.com/lamw/nested-vsan-esa-mock-hw-vib/releases/download/1.0/nested-vsan-esa-mock-hw.vib --no-sig-check
-#esxcli network firewall ruleset set -e false -r httpClient
+{% if host_count < 3 %}
+# Install vSAN ESA Mock VIB (required for < 3 hosts)
+esxcli network firewall ruleset set -e true -r httpClient
+esxcli software acceptance set --level CommunitySupported
+esxcli software vib install -v https://github.com/lamw/nested-vsan-esa-mock-hw-vib/releases/download/1.0/nested-vsan-esa-mock-hw.vib --no-sig-check
+esxcli network firewall ruleset set -e false -r httpClient
+{% endif %}
 
 # Configure SSH keys if provided
 if [ -n "${SSH_ROOT_KEY}" ]; then
@@ -61,6 +65,9 @@ fi
 # Memory Optimizations
 esxcli system settings advanced set -o /Mem/ShareForceSalting -i 0
 esxcli system settings advanced set -o /Mem/AllocGuestLargePage -i 0
+
+# vSAN Optimizations
+esxcli system settings advanced set -i 1 -o /VSAN/DOMNetworkSchedulerThrottleComponent
 
 # Configure VM Network VLAN & MTU
 esxcli network vswitch standard portgroup set -p "VM Network" -v ${MANAGEMENT_VLAN}

@@ -23,6 +23,45 @@ common:
   # Download from: https://support.broadcom.com/
   esxi_iso_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
 
+  # OVFTool path (for deploying VCF Installer OVA)
+  ovftool_path: "/Applications/VMware OVF Tool/ovftool"
+
+# VCF Installer Configuration
+vcf_installer:
+  # VCF Installer OVA path
+  # Download from: https://support.broadcom.com/
+  ova_path: "/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+
+  # VCF Installer VM configuration
+  vm_name: "sddcm01"
+  hostname: "sddcm01.vcf.lab"
+  ip: "172.30.0.21"
+
+  # VCF Installer passwords (must be 12+ characters)
+  root_password: "VMware1!VMware1!"
+  admin_password: "VMware1!VMware1!"
+
+  # Target ESXi host for VCF Installer deployment (usually first host)
+  target_host: 1  # Deploys to hosts[0] (esx01)
+  vm_network: "VM Network"
+
+  # VCF Installer feature properties
+  features:
+    single_host_domain: true  # Enable single-host domain support
+    skip_nic_speed_validation: true  # Skip physical NIC speed validation
+
+  # Software depot configuration
+  depot:
+    type: "offline"  # "offline" or "online"
+    use_https: false  # Use HTTP for offline depot
+
+# vCenter Configuration (deployed by VCF)
+vcenter:
+  hostname: "vc01.vcf.lab"
+  ip: "172.30.0.13"
+  username: "administrator@vsphere.local"
+  password: "VMware1!VMware1!"
+
 # ESXi Host Configurations
 hosts:
   - number: 1
@@ -51,3 +90,7 @@ hosts:
 # - To find NVMe device identifiers, boot ESXi installer and run 'vdq -q'
 # - All IPs should be on the same subnet as specified in network.subnet
 # - Ensure VLAN is configured on your physical switch
+#
+# Conditional Configuration (based on number of hosts):
+# - < 3 hosts: vSAN ESA Mock VIB is installed (required for vSAN with < 3 hosts)
+# - >= 3 hosts: Standard vSAN configuration, TierTdmNumBatches optimization enabled

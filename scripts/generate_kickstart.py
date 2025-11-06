@@ -106,6 +106,9 @@ class KickstartGenerator:
             # Security settings
             "root_password": common['root_password'],
             "ssh_key": common['ssh_root_key'],
+
+            # Deployment settings
+            "host_count": len(self.config['hosts_dict']),
         }
 
     def generate_kickstart(self, host_num: int, output_dir: Path) -> Path:

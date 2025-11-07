@@ -83,8 +83,8 @@ hosts:
     hostname: "esx03.vcf.lab"
     ip: "172.30.0.12"
     # IMPORTANT: Update these with your actual NVMe device identifiers!
-    install_disk: "t10.NVMe____PLACEHOLDER_INSTALL_DISK__________________CHANGE_ME"
-    tiering_disk: "t10.NVMe____PLACEHOLDER_TIERING_DISK______________CHANGE_ME"
+    install_disk: "t10.NVMe____SHGP312D500GM____________________________00E3E126002EE4AC"
+    tiering_disk: "t10.NVMe____Samsung_SSD_990_PRO_4TB_________________8639A15148382500"
     datastore_name: "local-vmfs-datastore-3"
 # Notes:
 # - To find NVMe device identifiers, boot ESXi installer and run 'vdq -q'

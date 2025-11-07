@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration Variables - CUSTOMIZE THESE
-ESXI_ISO_PATH="/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+ESXI_ISO_PATH="/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.1.0.24957456.x86_64.iso"
 WORKING_DIR="./esxi-reinstall-temp"
 
 # Network Configuration for New Setup

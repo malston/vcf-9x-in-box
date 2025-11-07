@@ -21,7 +21,7 @@ common:
   # IMPORTANT: Use ESXi 9.0.0.0 build 24755229 (or the version specified in VCF 9.0.0.0 release notes)
   # This version MUST be compatible with VCF 9.0.0.0
   # Download from: https://support.broadcom.com/
-  esxi_iso_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+  esxi_iso_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.1.0.24957456.x86_64.iso"
 
   # OVFTool path (for deploying VCF Installer OVA)
   ovftool_path: "/Applications/VMware OVF Tool/ovftool"
@@ -30,7 +30,7 @@ common:
 vcf_installer:
   # VCF Installer OVA path
   # Download from: https://support.broadcom.com/
-  ova_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+  ova_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.1.0.24962180.ova"
 
   # VCF Installer VM configuration
   vm_name: "sddcm01"
@@ -42,18 +42,18 @@ vcf_installer:
   admin_password: "VMware1!VMware1!"
 
   # Target ESXi host for VCF Installer deployment (usually first host)
-  target_host: 1  # Deploys to hosts[0] (esx01)
+  target_host: 1 # Deploys to hosts[0] (esx01)
   vm_network: "VM Network"
 
   # VCF Installer feature properties
   features:
-    single_host_domain: true  # Enable single-host domain support
-    skip_nic_speed_validation: true  # Skip physical NIC speed validation
+    single_host_domain: true # Enable single-host domain support
+    skip_nic_speed_validation: true # Skip physical NIC speed validation
 
   # Software depot configuration
   depot:
-    type: "offline"  # "offline" or "online"
-    use_https: false  # Use HTTP for offline depot
+    type: "offline" # "offline" or "online"
+    use_https: false # Use HTTP for offline depot
 
 # vCenter Configuration (deployed by VCF)
 vcenter:

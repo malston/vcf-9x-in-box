@@ -23,13 +23,13 @@ This is the recommended approach:
 
 ```bash
 # Use the same USB drive for each host
-sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=1
 # Insert in host 1, boot, wait ~20 minutes for install to complete
 
-sudo make usb-create USB=/dev/disk2 HOST=2  # Overwrites USB
+sudo make usb-create USB=/dev/disk4 HOST=2  # Overwrites USB
 # Insert in host 2, boot, wait ~20 minutes
 
-sudo make usb-create USB=/dev/disk2 HOST=3  # Overwrites USB
+sudo make usb-create USB=/dev/disk4 HOST=3  # Overwrites USB
 # Insert in host 3, boot, wait ~20 minutes
 
 Total time: ~60 minutes (sequential)
@@ -43,9 +43,9 @@ If you **do** have 3 USB drives, you can install all hosts simultaneously:
 
 ```bash
 # Create 3 different USB drives
-sudo make usb-create USB=/dev/disk2 HOST=1
-sudo make usb-create USB=/dev/disk3 HOST=2
-sudo make usb-create USB=/dev/disk4 HOST=3
+sudo make usb-create USB=/dev/disk4 HOST=1
+sudo make usb-create USB=/dev/disk5 HOST=2
+sudo make usb-create USB=/dev/disk6 HOST=3
 
 # Insert all 3 USB drives into all 3 hosts and power on
 # All hosts install in parallel
@@ -56,6 +56,7 @@ Total time: ~20 minutes (parallel)
 #### Recommendation
 
 **Use 1 USB drive** (sequential) unless:
+
 - You're in a hurry and want to save 40 minutes
 - You already have multiple USB drives available
 - You want to minimize the number of times you need to physically access the hardware
@@ -76,6 +77,7 @@ install --disk=t10.NVMe____Samsung_SSD_980_500GB___... --overwritevmfs
 ```
 
 The `--overwritevmfs` flag tells the ESXi installer to:
+
 - **Overwrite any existing VMFS partitions** on the target disk
 - **Destroy all existing data** on the install disk
 - **Perform a clean installation** without prompting
@@ -93,11 +95,13 @@ The installation will proceed automatically without any user interaction, regard
 #### Important Notes
 
 ⚠️ **All data on the install disk will be destroyed**
+
 - The install disk specified in your config will be completely wiped
 - Any VMs, datastores, or other data on that disk will be lost
 - This is intentional and expected for a fresh ESXi deployment
 
 ✅ **Other disks are safe**
+
 - Only the disk specified as `install_disk` in `vcf-config.yaml` is affected
 - Your `tiering_disk` and other NVMe drives remain untouched during initial install
 - The kickstart `%firstboot` section configures those disks later
@@ -122,6 +126,7 @@ hosts:
 ### How long does the ESXi installation take?
 
 **Approximately 15-20 minutes per host**, broken down as:
+
 - Initial installation: ~5 minutes
 - First reboot: ~2 minutes
 - Firstboot configuration: ~5-10 minutes
@@ -145,6 +150,7 @@ Total hands-off time once you insert the USB and power on.
    - Should see ESXi web interface
 
 4. **SSH is accessible:**
+
    ```bash
    ssh root@172.30.0.10
    # Should connect without errors
@@ -176,6 +182,7 @@ Total hands-off time once you insert the USB and power on.
 8. Copy the full device identifiers
 
 **Example output:**
+
 ```
 t10.NVMe____Samsung_SSD_980_500GB___________________7F17A051D3382500
 t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500
@@ -193,6 +200,7 @@ esxcli storage core device list | grep -i "Display Name\|Device Type"
 ### Why do I need exact device identifiers?
 
 **Because:**
+
 - Each NVMe drive has a unique identifier
 - Even identical drive models have different serial numbers
 - The kickstart needs exact identifiers to target the correct disk
@@ -201,6 +209,7 @@ esxcli storage core device list | grep -i "Display Name\|Device Type"
 ### What if I use the wrong identifier?
 
 **Possible outcomes:**
+
 - Installation fails with "disk not found" error
 - Installation succeeds but uses wrong disk (data loss on unexpected disk)
 - Host doesn't boot properly after installation
@@ -216,6 +225,7 @@ esxcli storage core device list | grep -i "Display Name\|Device Type"
 **No!** The script automatically detects your host count and skips execution if not needed.
 
 From your `config/vcf-config.yaml`:
+
 ```yaml
 hosts:
   - number: 1
@@ -224,6 +234,7 @@ hosts:
 ```
 
 **What happens:**
+
 - Script reads config and counts hosts
 - If 3+ hosts: Prints message and exits (no changes made)
 - If 2 hosts: Performs the FTT=0 policy fix
@@ -235,6 +246,7 @@ hosts:
 **Timing:** **IMMEDIATELY** after clicking "DEPLOY" in the VCF Installer UI
 
 **Why this timing:**
+
 1. VCF starts deploying vCenter Server
 2. vCenter creates default vSAN policy (FTT=1, requires 3 hosts)
 3. Script waits for vCenter to be ready
@@ -267,6 +279,7 @@ uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run
 ```
 
 **What dry-run shows:**
+
 - Exactly what commands would be executed
 - What files would be modified
 - What API calls would be made
@@ -278,19 +291,22 @@ uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run
 **Required:** ESXi 9.0.0.0 build 24755229
 
 **Why this specific build:**
+
 - VCF 9.0.0.0 requires specific ESXi versions
 - Version compatibility is strictly enforced
 - Mismatch causes deployment failures
 - This build is documented in VCF 9.0.0.0 release notes
 
 **How to verify:**
+
 ```bash
 ssh root@172.30.0.10 "vmware -v"
 # Must show: VMware ESXi 9.0.0 build-24755229
 ```
 
 **Where to find:**
-- Broadcom Support Portal: https://support.broadcom.com/
+
+- Broadcom Support Portal: <https://support.broadcom.com/>
 - Path in offline depot: `PROD/COMP/ESX_HOST/`
 - Filename: `VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso`
 
@@ -308,6 +324,7 @@ network:
 ```
 
 **Requirements:**
+
 - VLAN must exist on your physical switch
 - VLAN must be configured as tagged/trunked to the ESXi hosts
 - All hosts must use the same management VLAN
@@ -318,10 +335,12 @@ network:
 **Recommended but not strictly required:**
 
 **Minimum (will work):**
+
 - 2x 1GbE NICs per host
 - May see performance warnings during VCF validation
 
 **Recommended:**
+
 - 2x 10GbE NICs per host (what MS-A2 provides)
 - Better performance for vSAN, vMotion, and production workloads
 
@@ -330,10 +349,12 @@ network:
 ### Can I change IP addresses after installation?
 
 **Before VCF deployment:** Yes, relatively easy
+
 - Regenerate kickstart configs with new IPs
 - Reinstall ESXi on hosts (overwrites everything)
 
 **After VCF deployment:** Difficult, not recommended
+
 - VCF has configured vCenter, NSX, distributed switches, etc.
 - IP changes require extensive reconfiguration
 - May break existing VCF deployment
@@ -350,27 +371,31 @@ network:
 **Check these items:**
 
 1. **Verify KS.CFG exists on USB:**
+
    ```bash
    ls /Volumes/ESXi/KS.CFG
    # Should show the file
    ```
 
 2. **Verify BOOT.CFG was modified:**
+
    ```bash
    cat /Volumes/ESXi/EFI/BOOT/BOOT.CFG | grep kernelopt
    # Should show: kernelopt=ks=usb:/KS.CFG
    ```
 
 3. **Check USB was created correctly:**
+
    ```bash
    # Recreate USB with verbose output
-   sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
+   sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
    # Watch for any error messages
    ```
 
 4. **Try dry-run first:**
+
    ```bash
-   uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+   uv run scripts/create_esxi_usb.py --dry-run /dev/disk4 1
    # Verify all steps look correct
    ```
 
@@ -379,6 +404,7 @@ network:
 **Common causes:**
 
 1. **Wrong IP address or host not fully booted:**
+
    ```bash
    # Ping first
    ping 172.30.0.10
@@ -388,6 +414,7 @@ network:
    ```
 
 2. **Firewall blocking SSH:**
+
    ```bash
    # From ESXi console, press ALT+F1
    # Check if SSH is running:
@@ -395,12 +422,14 @@ network:
    ```
 
 3. **DNS not resolving:**
+
    ```bash
    # Use IP instead of hostname
    ssh root@172.30.0.10  # Instead of root@esx01.vcf.lab
    ```
 
 4. **Kickstart firstboot didn't complete:**
+
    ```bash
    # Check if host has rebooted twice
    # First reboot: basic install
@@ -414,12 +443,14 @@ network:
 **Solution:**
 
 1. **Check actual datastore name on ESXi:**
+
    ```bash
    ssh root@172.30.0.10 "esxcli storage filesystem list"
    # Note the exact datastore name
    ```
 
 2. **Verify it matches config:**
+
    ```yaml
    # config/vcf-config.yaml
    hosts:
@@ -428,6 +459,7 @@ network:
    ```
 
 3. **If mismatch, update config and redeploy:**
+
    ```bash
    vim config/vcf-config.yaml  # Fix datastore name
    make deploy-vcf-installer
@@ -438,6 +470,7 @@ network:
 **Short answer:** Not easily. VCF deployments should run to completion.
 
 **If deployment fails:**
+
 - Review logs in VCF Installer UI for specific error
 - Fix the underlying issue (DNS, networking, etc.)
 - **Usually need to redeploy from scratch:**
@@ -446,6 +479,7 @@ network:
   - Start VCF deployment again
 
 **Prevention:**
+
 - Validate all prerequisites before starting
 - Use dry-run mode to preview configurations
 - Ensure DNS entries are correct
@@ -472,6 +506,7 @@ network:
 | VCF deployment | 3-4 hours | Fully automated |
 
 **Can be parallelized:**
+
 - ESXi installation: 60 min → 20 min (with 3 USB drives)
 - Most waiting is during VCF deployment (automated, no intervention)
 
@@ -480,12 +515,14 @@ network:
 **Yes!** The scripts work with any x86-64 hardware that supports ESXi 9.0.
 
 **Requirements:**
+
 - Meets ESXi 9.0 hardware requirements
 - Has NVMe or SAS/SATA storage
 - Has at least 2 NICs (1GbE or 10GbE)
 - Meets VCF minimum specs (16C/32T, 128GB RAM recommended)
 
 **Configuration changes needed:**
+
 - Update NVMe device identifiers in `vcf-config.yaml`
 - May need to adjust network device names
 - Verify NIC compatibility with ESXi 9.0
@@ -495,16 +532,19 @@ network:
 **Yes**, but:
 
 **For evaluation/lab:**
+
 - VCF 9.0 includes 60-day evaluation licenses
 - All features enabled during evaluation
 - No license keys needed initially
 
 **For production:**
+
 - Requires VCF licenses from Broadcom
 - Licenses applied via VCF Operations UI
 - Contact Broadcom sales/support for licensing
 
 **This project is designed for:**
+
 - Home lab environments
 - Learning and development
 - Testing and evaluation
@@ -523,4 +563,4 @@ network:
 
 **Last Updated:** October 17, 2024
 
-**Have more questions?** Open an issue at: https://github.com/anthropics/claude-code/issues
+**Have more questions?** Open an issue at: <https://github.com/anthropics/claude-code/issues>

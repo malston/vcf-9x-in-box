@@ -32,7 +32,7 @@ This guide explains the complete deployment workflow from generating kickstart c
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Step 3: Create Bootable USB Installers                          │
-│ Run: sudo make usb-create USB=/dev/disk2 HOST=1 (repeat x3)     │
+│ Run: sudo make usb-create USB=/dev/disk4 HOST=1 (repeat x3)     │
 │ └─> Creates: ESXi 9.0.0.0 USB installer with kickstart config   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -240,7 +240,7 @@ uv run scripts/generate_kickstart.py --help
 Input:
   - ESXi ISO: VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso
   - Kickstart: config/ks-esx01.cfg
-  - USB Device: /dev/disk2
+  - USB Device: /dev/disk4
 
 Process:
   1. Unmount USB device
@@ -260,22 +260,22 @@ Output:
 
 ```bash
 # Dry run first (no root required, preview only)
-uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+uv run scripts/create_esxi_usb.py --dry-run /dev/disk4 1
 
 # List available USB devices
 make usb-list
 
 # Create USB for host 1
-sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=1
 
 # Create USB for host 2 (use same USB, recreates it)
-sudo make usb-create USB=/dev/disk2 HOST=2
+sudo make usb-create USB=/dev/disk4 HOST=2
 
 # Create USB for host 3
-sudo make usb-create USB=/dev/disk2 HOST=3
+sudo make usb-create USB=/dev/disk4 HOST=3
 
 # Or use Python directly
-sudo uv run scripts/create_esxi_usb.py /dev/disk2 1
+sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 ```
 
 **Input Files:**
@@ -816,7 +816,7 @@ uv run scripts/generate_kickstart.py all -v
 
 ```bash
 # Must use sudo
-sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=1
 
 # Or verify you're using the right device
 make usb-list
@@ -885,11 +885,11 @@ vim config/vcf-config.yaml
 make generate
 
 # 3. Create USB installers (one USB, reused for each host)
-sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=1
 # ... insert USB in host 1, boot, wait for install ...
-sudo make usb-create USB=/dev/disk2 HOST=2
+sudo make usb-create USB=/dev/disk4 HOST=2
 # ... insert USB in host 2, boot, wait for install ...
-sudo make usb-create USB=/dev/disk2 HOST=3
+sudo make usb-create USB=/dev/disk4 HOST=3
 # ... insert USB in host 3, boot, wait for install ...
 
 # 4. Verify ESXi installed

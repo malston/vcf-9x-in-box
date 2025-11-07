@@ -85,10 +85,10 @@ generate-3: ## Generate kickstart for ESX03
 
 ##@ USB Creation
 
-usb-create: ## Create bootable USB (usage: make usb-create USB=/dev/disk2 HOST=1)
+usb-create: ## Create bootable USB (usage: make usb-create USB=/dev/disk4 HOST=1)
 	@if [ -z "$(USB)" ] || [ -z "$(HOST)" ]; then \
 		echo "$(RED)ERROR: USB or HOST not specified$(NC)"; \
-		echo "Usage: make usb-create USB=/dev/disk2 HOST=1"; \
+		echo "Usage: make usb-create USB=/dev/disk4 HOST=1"; \
 		echo ""; \
 		echo "To find your USB device, run: diskutil list"; \
 		exit 1; \

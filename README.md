@@ -72,11 +72,11 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 **❓ NEW:** Common questions and answers about VCF 9.x in a Box deployment. See **[FAQ.md](FAQ.md)**.
 
 **Popular topics:**
-- Do I need 3 separate USB drives? (No, you can reuse one!)
-- Does previous ESXi installation matter? (No, kickstart handles it!)
-- How long does deployment take? (~5-6 hours total)
-- What ESXi version is required? (9.0.0.0 build 24755229)
-- When to run the vSAN policy fix script? (2-node only, immediately after deployment start)
+* Do I need 3 separate USB drives? (No, you can reuse one!)
+* Does previous ESXi installation matter? (No, kickstart handles it!)
+* How long does deployment take? (~5-6 hours total)
+* What ESXi version is required? (9.0.0.0 build 24755229)
+* When to run the vSAN policy fix script? (2-node only, immediately after deployment start)
 
 See the full FAQ for detailed answers and many more questions.
 
@@ -143,8 +143,8 @@ make generate-3   # For esx03
 make usb-list
 
 # Create bootable USB for specific host
-make usb-create USB=/dev/disk2 HOST=1
-make usb-create USB=/dev/disk2 HOST=3
+make usb-create USB=/dev/disk4 HOST=1
+make usb-create USB=/dev/disk4 HOST=3
 ```
 
 ### Complete Workflow
@@ -190,7 +190,7 @@ See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment informati
 3. **Setup VCF Offline Depot** on HTTP server
 4. **Download ESXi 9.0.0.0 ISO** (build 24755229) - See [Software Requirements](#software-requirements)
 5. **Generate kickstart configs:** `make generate`
-6. **Create ESXi USB installers:** `make usb-create USB=/dev/disk2 HOST=1` (repeat for each host)
+6. **Create ESXi USB installers:** `make usb-create USB=/dev/disk4 HOST=1` (repeat for each host)
 7. **Deploy ESXi 9.0.0.0** on all hosts (automated via kickstart) - **This MUST be done before VCF Installer deployment**
 8. **Deploy VCF Installer:** `make deploy-vcf-installer`
 9. **Configure VCF Installer:** `make setup-vcf-installer`
@@ -308,10 +308,10 @@ The following automation scripts are provided in the `scripts/` directory:
 
 ```bash
 # Preview (no root required)
-uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+uv run scripts/create_esxi_usb.py --dry-run /dev/disk4 1
 
 # Create USB (requires sudo)
-sudo make usb-create USB=/dev/disk2 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=1
 ```
 
 ### deploy_vcf_installer.py
@@ -494,12 +494,12 @@ You can host the VCF Offline Depot using a traditional HTTP Web Server (HTTPS is
 
 ```bash
 # Dry run first (preview without changes)
-uv run scripts/create_esxi_usb.py --dry-run /dev/disk2 1
+uv run scripts/create_esxi_usb.py --dry-run /dev/disk4 1
 
 # Create USB for each host
-sudo make usb-create USB=/dev/disk2 HOST=1
-sudo make usb-create USB=/dev/disk2 HOST=2
-sudo make usb-create USB=/dev/disk2 HOST=3
+sudo make usb-create USB=/dev/disk4 HOST=1
+sudo make usb-create USB=/dev/disk4 HOST=2
+sudo make usb-create USB=/dev/disk4 HOST=3
 ```
 
 **Alternative:** Manual creation using [UNetbootin](https://unetbootin.github.io/) (see steps below)

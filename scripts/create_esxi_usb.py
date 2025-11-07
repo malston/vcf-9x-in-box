@@ -464,7 +464,7 @@ def check_root(dry_run: bool = False):
 
     if os.geteuid() != 0:
         print_message(Colors.RED, "ERROR: This script must be run with sudo")
-        print("Example: sudo python3 scripts/create_esxi_usb.py /dev/disk2 1")
+        print("Example: sudo python3 scripts/create_esxi_usb.py /dev/disk4 1")
         sys.exit(1)
 
 
@@ -1314,13 +1314,13 @@ def main():
         epilog="""
 Examples:
   %(prog)s --interactive                  # Interactive mode with disk selection
-  %(prog)s --dry-run /dev/disk2 1         # Dry run (no root required)
-  sudo %(prog)s /dev/disk2 1              # Create USB for ESX01 (simple dd method)
-  sudo %(prog)s /dev/disk2 1 --method=copy  # Create USB with writable filesystem
+  %(prog)s --dry-run /dev/disk4 1         # Dry run (no root required)
+  sudo %(prog)s /dev/disk4 1              # Create USB for ESX01 (simple dd method)
+  sudo %(prog)s /dev/disk4 1 --method=copy  # Create USB with writable filesystem
   sudo %(prog)s /dev/disk3 2              # Create USB for ESX02
-  sudo %(prog)s /dev/disk2 3 -y           # Create USB for ESX03, skip confirmation
+  sudo %(prog)s /dev/disk4 3 -y           # Create USB for ESX03, skip confirmation
   %(prog)s --list                         # List available USB devices
-  sudo %(prog)s /dev/disk2 1 --log usb.log  # With logging
+  sudo %(prog)s /dev/disk4 1 --log usb.log  # With logging
 
 Interactive mode:
   %(prog)s --interactive                  # Guided USB creation
@@ -1335,7 +1335,7 @@ To find your USB device:
     )
 
     parser.add_argument(
-        "usb_device", nargs="?", help="USB device path (e.g., /dev/disk2)"
+        "usb_device", nargs="?", help="USB device path (e.g., /dev/disk4)"
     )
 
     parser.add_argument(
@@ -1429,7 +1429,7 @@ To find your USB device:
 
         # Get disk selection
         while True:
-            disk_input = input("Enter disk number (e.g., 2 for /dev/disk2): ").strip()
+            disk_input = input("Enter disk number (e.g., 2 for /dev/disk4): ").strip()
             if disk_input.isdigit():
                 args.usb_device = f"/dev/disk{disk_input}"
                 if Path(args.usb_device).exists():
@@ -1490,7 +1490,7 @@ To find your USB device:
         print("Please specify the ESXi ISO path using one of these methods:")
         print("1. Use the -i/--iso command line option:")
         print(
-            "   Example: sudo uv run scripts/create_esxi_usb.py /dev/disk2 1 -i /path/to/esxi.iso"
+            "   Example: sudo uv run scripts/create_esxi_usb.py /dev/disk4 1 -i /path/to/esxi.iso"
         )
         print("2. Add 'esxi_iso_path' to the 'common' section in your config file")
         sys.exit(1)

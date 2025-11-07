@@ -5,12 +5,16 @@ Purpose: Automate creation of bootable ESXi USB drives with kickstart configs
 """
 
 import argparse
+import atexit
+import hashlib
 import os
+import signal
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 try:
     import yaml

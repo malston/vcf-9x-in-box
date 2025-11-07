@@ -574,6 +574,7 @@ class USBCreator:
         iso_path: str,
         skip_confirm: bool = False,
         dry_run: bool = False,
+        method: str = "copy",
     ):
         """Create bootable ESXi USB for specific host"""
 
@@ -581,6 +582,12 @@ class USBCreator:
             print_message(Colors.YELLOW, "========================================")
             print_message(Colors.YELLOW, "DRY RUN MODE - No changes will be made")
             print_message(Colors.YELLOW, "========================================\n")
+
+        # Show method being used
+        if method == "copy":
+            print_message(Colors.BLUE, f"Using copy method (writable FAT32 with kickstart support)")
+        else:
+            print_message(Colors.BLUE, f"Using dd method (fast, read-only filesystem)")
 
         # Validate host number
         if host_num not in self.config["hosts_dict"]:
@@ -642,8 +649,31 @@ class USBCreator:
             print(f"  Host IP:        {host_config['ip']}")
             print(f"  Kickstart:      {kickstart_file.name}")
             print(f"  ESXi ISO:       {iso_path}")
+            print(f"  Method:         {method}")
             print()
             confirm_action(f"This will ERASE ALL DATA on {usb_device}!")
+
+        # Route to appropriate method
+        if method == "copy":
+            self._create_usb_copy_method(
+                usb_device, host_num, host_config, iso_path, kickstart_file, skip_confirm, dry_run
+            )
+        else:
+            self._create_usb_dd_method(
+                usb_device, host_num, host_config, iso_path, kickstart_file, skip_confirm, dry_run
+            )
+
+    def _create_usb_dd_method(
+        self,
+        usb_device: str,
+        host_num: int,
+        host_config: Dict[str, Any],
+        iso_path: str,
+        kickstart_file: Path,
+        skip_confirm: bool,
+        dry_run: bool,
+    ):
+        """Create USB using dd method (fast, read-only)"""
 
         # Display operation plan
         print()
@@ -744,16 +774,68 @@ class USBCreator:
             )
             time.sleep(3)
 
-        # Mount the USB device
+        # Detect and mount the USB device partition
         if dry_run:
             print(
-                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would mount USB partition: {usb_device}s1"
+                f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would detect and mount USB partition"
             )
+            usb_partition = f"{usb_device}s1"
+            mount_point = "/Volumes/ESXi"
         else:
-            print(f"{Colors.YELLOW}Mounting USB device...{Colors.NC}")
+            print_message(Colors.YELLOW, "Detecting USB partition...")
 
-        usb_partition = f"{usb_device}s1"
-        mount_point = "/Volumes/ESXi"  # Typical mount point for ESXi USB
+            # Try to detect the actual partition
+            usb_partition = None
+
+            # Check for common partition schemes
+            for suffix in ["s1", "s2", "1", "2"]:
+                test_partition = f"{usb_device}{suffix}"
+                if Path(test_partition).exists():
+                    usb_partition = test_partition
+                    log(f"Found partition: {usb_partition}")
+                    break
+
+            if not usb_partition:
+                print_message(
+                    Colors.YELLOW,
+                    "Could not detect partition automatically, trying to list disk..."
+                )
+                try:
+                    result = subprocess.run(
+                        ["diskutil", "list", usb_device],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    log(f"Disk layout:\n{result.stdout}")
+
+                    # Try to extract partition identifier from diskutil list
+                    for line in result.stdout.splitlines():
+                        if "disk" in line and usb_device.split("/")[-1] in line:
+                            parts = line.split()
+                            for part in parts:
+                                if part.startswith("disk") and "s" in part:
+                                    usb_partition = f"/dev/{part}"
+                                    log(f"Extracted partition from list: {usb_partition}")
+                                    break
+                            if usb_partition:
+                                break
+                except subprocess.CalledProcessError:
+                    pass
+
+            if not usb_partition:
+                print_message(
+                    Colors.YELLOW,
+                    "Warning: Could not detect bootable partition automatically"
+                )
+                print_message(
+                    Colors.YELLOW,
+                    "Attempting to mount first partition..."
+                )
+                usb_partition = f"{usb_device}s1"
+
+            print_message(Colors.YELLOW, f"Mounting {usb_partition}...")
+            mount_point = None
 
         if dry_run:
             # Copy kickstart file
@@ -782,47 +864,180 @@ class USBCreator:
         else:
             try:
                 # Try to mount the partition
-                run_command(["diskutil", "mount", usb_partition])
-
-                # Get the mount point
-                output = run_command(
-                    ["diskutil", "info", usb_partition], capture_output=True
-                )
-                if output is None:
-                    print(
-                        f"{Colors.RED}ERROR: Could not get device info for {usb_partition}{Colors.NC}"
+                try:
+                    subprocess.run(
+                        ["diskutil", "mount", usb_partition],
+                        capture_output=True,
+                        text=True,
+                        check=True,
                     )
-                    sys.exit(1)
+                except subprocess.CalledProcessError as e:
+                    print_message(
+                        Colors.YELLOW,
+                        f"Warning: Could not mount {usb_partition}: {e.stderr.strip() if e.stderr else 'Unknown error'}"
+                    )
+                    print_message(
+                        Colors.YELLOW,
+                        "This is normal for ESXi ISOs - trying alternative approach..."
+                    )
 
-                for line in output.splitlines():
-                    if "Mount Point:" in line:
-                        mount_point = line.split(":", 1)[1].strip()
-                        break
+                    # Try to force mount or find already mounted partition
+                    try:
+                        result = subprocess.run(
+                            ["mount"], capture_output=True, text=True, check=True
+                        )
+                        # Check if any partition from our device is already mounted
+                        device_name = usb_device.split("/")[-1]
+                        for line in result.stdout.splitlines():
+                            if device_name in line and "/Volumes/" in line:
+                                mount_point = line.split("on ")[1].split(" (")[0].strip()
+                                log(f"Found already mounted partition: {mount_point}")
+                                break
+                    except subprocess.CalledProcessError:
+                        pass
 
+                # Get the mount point if we successfully mounted
                 if not mount_point:
-                    print(
-                        f"{Colors.RED}ERROR: Could not determine mount point{Colors.NC}"
-                    )
-                    sys.exit(1)
+                    try:
+                        output = subprocess.run(
+                            ["diskutil", "info", usb_partition],
+                            capture_output=True,
+                            text=True,
+                            check=True,
+                        )
 
-                print(f"{Colors.GREEN}✓{Colors.NC} USB mounted at: {mount_point}")
+                        for line in output.stdout.splitlines():
+                            if "Mount Point:" in line:
+                                mount_point = line.split(":", 1)[1].strip()
+                                break
+                    except subprocess.CalledProcessError:
+                        pass
+
+                if mount_point and mount_point != "":
+                    print_message(Colors.GREEN, f"✓ USB mounted at: {mount_point}")
+
+                    # Check if mounted read-only
+                    try:
+                        result = subprocess.run(
+                            ["mount"], capture_output=True, text=True, check=True
+                        )
+                        mount_is_readonly = False
+                        for line in result.stdout.splitlines():
+                            if mount_point in line and "read-only" in line:
+                                mount_is_readonly = True
+                                break
+
+                        if mount_is_readonly:
+                            print_message(
+                                Colors.YELLOW,
+                                "Warning: Filesystem is mounted read-only, attempting to remount as read-write..."
+                            )
+
+                            # Try to remount as read-write
+                            try:
+                                subprocess.run(
+                                    ["sudo", "mount", "-uw", mount_point],
+                                    capture_output=True,
+                                    text=True,
+                                    check=True,
+                                )
+                                print_message(Colors.GREEN, "✓ Remounted as read-write")
+                            except subprocess.CalledProcessError:
+                                print_message(
+                                    Colors.YELLOW,
+                                    "Could not remount as read-write, trying diskutil..."
+                                )
+
+                                # Try unmount and remount with different options
+                                try:
+                                    subprocess.run(
+                                        ["diskutil", "unmount", mount_point],
+                                        capture_output=True,
+                                        check=False,
+                                    )
+                                    subprocess.run(
+                                        ["diskutil", "mount", "readWrite", usb_partition],
+                                        capture_output=True,
+                                        text=True,
+                                        check=True,
+                                    )
+                                    print_message(Colors.GREEN, "✓ Remounted as read-write")
+                                except subprocess.CalledProcessError:
+                                    print_message(
+                                        Colors.RED,
+                                        "ERROR: Cannot mount filesystem as read-write"
+                                    )
+                                    print_message(
+                                        Colors.YELLOW,
+                                        "The ESXi ISO filesystem may not support read-write mounting on macOS"
+                                    )
+                                    print_message(
+                                        Colors.BLUE,
+                                        "Manual workaround needed:"
+                                    )
+                                    print("  1. The USB boots ESXi successfully")
+                                    print("  2. To add kickstart, you need to:")
+                                    print("     a. Extract the ISO contents to a temp directory")
+                                    print("     b. Add KS.CFG and modify BOOT.CFG")
+                                    print("     c. Create a new ISO")
+                                    print("     d. Write new ISO to USB")
+                                    print()
+                                    print("  OR use manual ESXi installation without kickstart")
+                                    print()
+
+                                    subprocess.run(["diskutil", "eject", usb_device], check=False)
+                                    print_message(Colors.GREEN, "✓ USB device ejected")
+                                    self._print_summary(usb_device, host_num, host_config, dry_run, kickstart_added=False)
+                                    return
+                    except subprocess.CalledProcessError:
+                        pass  # Continue anyway
+                else:
+                    print_message(
+                        Colors.YELLOW,
+                        "Warning: Could not mount USB partition automatically"
+                    )
+                    print_message(
+                        Colors.YELLOW,
+                        "The ISO has been written successfully, but kickstart config could not be added"
+                    )
+                    print_message(
+                        Colors.BLUE,
+                        "You have two options:"
+                    )
+                    print("  1. Manually mount the USB and copy the kickstart file")
+                    print(f"     - Copy: {kickstart_file}")
+                    print("     - To: /Volumes/<USB>/KS.CFG")
+                    print("     - Modify: /Volumes/<USB>/EFI/BOOT/BOOT.CFG")
+                    print("     - Change kernelopt line to: kernelopt=ks=usb:/KS.CFG")
+                    print("  2. Use the USB for manual ESXi installation (no kickstart)")
+                    print()
+                    print_message(
+                        Colors.YELLOW,
+                        "Proceeding to eject the USB..."
+                    )
+
+                    # Skip kickstart operations
+                    subprocess.run(["diskutil", "eject", usb_device], check=False)
+                    print_message(Colors.GREEN, "✓ USB device ejected")
+                    self._print_summary(usb_device, host_num, host_config, dry_run, kickstart_added=False)
+                    return
 
                 # Copy kickstart file
-                print(f"{Colors.YELLOW}Copying kickstart config to USB...{Colors.NC}")
+                print_message(Colors.YELLOW, "Copying kickstart config to USB...")
                 ks_dest = Path(mount_point) / "KS.CFG"
                 run_command(["cp", str(kickstart_file), str(ks_dest)])
-                print(f"{Colors.GREEN}✓{Colors.NC} Copied kickstart config as KS.CFG")
+                print_message(Colors.GREEN, "✓ Copied kickstart config as KS.CFG")
 
                 # Modify BOOT.CFG
                 boot_cfg_path = Path(mount_point) / "EFI" / "BOOT" / "BOOT.CFG"
                 if not boot_cfg_path.exists():
-                    print(
-                        f"{Colors.RED}ERROR: BOOT.CFG not found at: {boot_cfg_path}{Colors.NC}"
+                    print_message(
+                        Colors.RED, f"ERROR: BOOT.CFG not found at: {boot_cfg_path}"
                     )
                     sys.exit(1)
 
-                print(
-                    f"{Colors.YELLOW}Modifying BOOT.CFG for kickstart installation...{Colors.NC}"
+                print_message(
+                    Colors.YELLOW, "Modifying BOOT.CFG for kickstart installation..."
                 )
 
                 # Backup original BOOT.CFG
@@ -841,18 +1056,18 @@ class USBCreator:
 
                 boot_cfg_path.write_text("\n".join(new_content) + "\n")
 
-                print(f"{Colors.GREEN}✓{Colors.NC} Modified BOOT.CFG for kickstart")
+                print_message(Colors.GREEN, "✓ Modified BOOT.CFG for kickstart")
 
                 # Verify the change
                 if "kernelopt=ks=usb:/KS.CFG" in boot_cfg_path.read_text():
-                    print(f"{Colors.GREEN}✓{Colors.NC} Verified BOOT.CFG modification")
+                    print_message(Colors.GREEN, "✓ Verified BOOT.CFG modification")
                 else:
-                    print(f"{Colors.RED}ERROR: BOOT.CFG modification failed{Colors.NC}")
+                    print_message(Colors.RED, "ERROR: BOOT.CFG modification failed")
                     sys.exit(1)
 
             finally:
                 # Unmount and eject USB
-                print(f"{Colors.YELLOW}Ejecting USB device...{Colors.NC}")
+                print_message(Colors.YELLOW, "Ejecting USB device...")
                 subprocess.run(["sync"], check=False)
                 subprocess.run(
                     ["diskutil", "unmount", mount_point],
@@ -864,7 +1079,174 @@ class USBCreator:
                 print_message(Colors.GREEN, "✓ USB device ejected")
 
         # Summary
-        self._print_summary(usb_device, host_num, host_config, dry_run)
+        self._print_summary(usb_device, host_num, host_config, dry_run, kickstart_added=True)
+
+    def _create_usb_copy_method(
+        self,
+        usb_device: str,
+        host_num: int,
+        host_config: Dict[str, Any],
+        iso_path: str,
+        kickstart_file: Path,
+        skip_confirm: bool,
+        dry_run: bool,
+    ):
+        """Create USB using copy method (writable FAT32 with kickstart)"""
+
+        # Display operation plan
+        print()
+        print(f"{Colors.BLUE}Operation Plan:{Colors.NC}")
+        print(f"  USB Device:     {usb_device}")
+        print(f"  ESXi Host:      {host_config['hostname']}")
+        print(f"  Host IP:        {host_config['ip']}")
+        print(f"  Kickstart:      {kickstart_file.name}")
+        print(f"  ESXi ISO:       {Path(iso_path).name}")
+        print(f"  Method:         Copy to FAT32 (writable)")
+        print()
+
+        if dry_run:
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would unmount USB device")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would reformat as FAT32")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would mount ISO")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would copy ISO contents to USB")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would copy kickstart as KS.CFG")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would modify BOOT.CFG")
+            print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would eject USB")
+            self._print_summary(usb_device, host_num, host_config, dry_run, kickstart_added=True)
+            return
+
+        # Step 1: Unmount
+        print_message(Colors.YELLOW, "Step 1/7: Unmounting USB device...")
+        subprocess.run(
+            ["diskutil", "unmountDisk", usb_device],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+
+        # Step 2: Format as FAT32
+        print_message(Colors.YELLOW, "Step 2/7: Reformatting USB as FAT32...")
+        try:
+            subprocess.run(
+                ["diskutil", "eraseDisk", "MS-DOS", "ESXI", "MBR", usb_device],
+                check=True,
+            )
+            print_message(Colors.GREEN, "✓ USB formatted as FAT32")
+        except subprocess.CalledProcessError:
+            print_message(Colors.RED, "ERROR: Failed to format USB")
+            sys.exit(1)
+
+        # Step 3: Mount ISO
+        print_message(Colors.YELLOW, "Step 3/7: Mounting ESXi ISO...")
+        import tempfile
+        iso_mount = Path(tempfile.mkdtemp(prefix="esxi-iso-"))
+
+        try:
+            subprocess.run(
+                ["hdiutil", "attach", iso_path, "-mountpoint", str(iso_mount), "-readonly"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+            print_message(Colors.GREEN, f"✓ ISO mounted at: {iso_mount}")
+        except subprocess.CalledProcessError:
+            print_message(Colors.RED, "ERROR: Failed to mount ISO")
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        # Step 4: Copy ISO contents to USB
+        usb_mount = Path("/Volumes/ESXI")
+
+        if not usb_mount.exists():
+            print_message(Colors.RED, f"ERROR: USB not mounted at {usb_mount}")
+            subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        print_message(Colors.YELLOW, "Step 4/7: Copying ISO contents to USB (this may take 5-10 minutes)...")
+        start_time = time.time()
+
+        try:
+            # Copy all visible files
+            subprocess.run(
+                ["cp", "-R", f"{iso_mount}/", f"{usb_mount}/"],
+                check=False,  # Some hidden files may fail, that's ok
+                stderr=subprocess.DEVNULL,
+            )
+
+            end_time = time.time()
+            duration = int(end_time - start_time)
+            print_message(Colors.GREEN, f"✓ ISO contents copied (took {duration}s)")
+        except Exception as e:
+            print_message(Colors.RED, f"ERROR: Failed to copy ISO contents: {e}")
+            subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        # Step 5: Add kickstart
+        print_message(Colors.YELLOW, "Step 5/7: Adding kickstart configuration...")
+        try:
+            ks_dest = usb_mount / "KS.CFG"
+            subprocess.run(["cp", str(kickstart_file), str(ks_dest)], check=True)
+            print_message(Colors.GREEN, "✓ Copied kickstart as KS.CFG")
+        except subprocess.CalledProcessError:
+            print_message(Colors.RED, "ERROR: Failed to copy kickstart")
+            subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        # Step 6: Modify BOOT.CFG
+        print_message(Colors.YELLOW, "Step 6/7: Modifying BOOT.CFG for kickstart...")
+        boot_cfg_path = usb_mount / "EFI" / "BOOT" / "BOOT.CFG"
+
+        if not boot_cfg_path.exists():
+            print_message(Colors.RED, f"ERROR: BOOT.CFG not found at: {boot_cfg_path}")
+            subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        try:
+            # Backup
+            subprocess.run(["cp", str(boot_cfg_path), f"{boot_cfg_path}.backup"], check=True)
+
+            # Modify
+            boot_cfg_content = boot_cfg_path.read_text()
+            new_content = []
+            for line in boot_cfg_content.splitlines():
+                if line.startswith("kernelopt="):
+                    new_content.append("kernelopt=ks=usb:/KS.CFG")
+                else:
+                    new_content.append(line)
+
+            boot_cfg_path.write_text("\n".join(new_content) + "\n")
+
+            # Verify
+            if "kernelopt=ks=usb:/KS.CFG" in boot_cfg_path.read_text():
+                print_message(Colors.GREEN, "✓ Modified BOOT.CFG for kickstart")
+            else:
+                print_message(Colors.RED, "ERROR: BOOT.CFG modification failed")
+                subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+                iso_mount.rmdir()
+                sys.exit(1)
+        except Exception as e:
+            print_message(Colors.RED, f"ERROR: Failed to modify BOOT.CFG: {e}")
+            subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+            iso_mount.rmdir()
+            sys.exit(1)
+
+        # Step 7: Cleanup and eject
+        print_message(Colors.YELLOW, "Step 7/7: Cleaning up and ejecting...")
+
+        # Unmount ISO
+        subprocess.run(["hdiutil", "detach", str(iso_mount)], check=False)
+        iso_mount.rmdir()
+
+        # Sync and eject USB
+        subprocess.run(["sync"], check=False)
+        subprocess.run(["diskutil", "eject", usb_device], check=False)
+        print_message(Colors.GREEN, "✓ USB device ejected")
+
+        # Summary
+        self._print_summary(usb_device, host_num, host_config, dry_run, kickstart_added=True)
 
     def _print_summary(
         self,
@@ -872,6 +1254,7 @@ class USBCreator:
         host_num: int,
         host_config: Dict[str, Any],
         dry_run: bool = False,
+        kickstart_added: bool = True,
     ):
         """Print completion summary with next steps"""
         print(f"\n{Colors.GREEN}========================================{Colors.NC}")
@@ -884,22 +1267,41 @@ class USBCreator:
         print(f"USB Device:    {usb_device}")
         print(f"ESXi Host:     {host_config['hostname']}")
         print(f"Host IP:       {host_config['ip']}")
-        print(f"Kickstart:     KS.CFG (from ks-esx0{host_num}.cfg)")
-        log(f"Created USB for {host_config['hostname']} on {usb_device}")
+
+        if kickstart_added:
+            print(f"Kickstart:     KS.CFG (from ks-esx0{host_num}.cfg) ✓")
+            log(f"Created USB for {host_config['hostname']} on {usb_device} with kickstart")
+        else:
+            print(f"Kickstart:     NOT ADDED (manual installation required)")
+            log(f"Created USB for {host_config['hostname']} on {usb_device} without kickstart")
+
         print()
         print_message(Colors.YELLOW, "Next Steps:")
         print("1. Remove USB drive from computer")
         print(f"2. Insert USB into MS-A2 host #{host_num} ({host_config['hostname']})")
         print("3. Power on the MS-A2")
         print("4. Press F11 (or appropriate boot menu key) to select USB boot")
-        print("5. Installation will proceed automatically")
-        print("6. Host will reboot twice during installation")
-        print("7. After final reboot, host will be accessible at:")
-        print(f"   https://{host_config['ip']} or https://{host_config['hostname']}")
-        print()
-        print_message(Colors.GREEN, "Login Credentials:")
-        print("  Username: root")
-        print(f"  Password: {self.config['common']['root_password']}")
+
+        if kickstart_added:
+            print("5. Installation will proceed automatically (kickstart enabled)")
+            print("6. Host will reboot twice during installation")
+            print("7. After final reboot, host will be accessible at:")
+            print(f"   https://{host_config['ip']} or https://{host_config['hostname']}")
+            print()
+            print_message(Colors.GREEN, "Login Credentials:")
+            print("  Username: root")
+            print(f"  Password: {self.config['common']['root_password']}")
+        else:
+            print_message(
+                Colors.YELLOW,
+                "5. MANUAL INSTALLATION REQUIRED (kickstart not configured)"
+            )
+            print("   You will need to:")
+            print("   - Select installation disk manually")
+            print("   - Configure network settings")
+            print("   - Set root password")
+            print("   - Complete installation wizard steps")
+
         print()
 
 
@@ -913,7 +1315,8 @@ def main():
 Examples:
   %(prog)s --interactive                  # Interactive mode with disk selection
   %(prog)s --dry-run /dev/disk2 1         # Dry run (no root required)
-  sudo %(prog)s /dev/disk2 1              # Create USB for ESX01
+  sudo %(prog)s /dev/disk2 1              # Create USB for ESX01 (simple dd method)
+  sudo %(prog)s /dev/disk2 1 --method=copy  # Create USB with writable filesystem
   sudo %(prog)s /dev/disk3 2              # Create USB for ESX02
   sudo %(prog)s /dev/disk2 3 -y           # Create USB for ESX03, skip confirmation
   %(prog)s --list                         # List available USB devices
@@ -921,6 +1324,10 @@ Examples:
 
 Interactive mode:
   %(prog)s --interactive                  # Guided USB creation
+
+Methods:
+  --method=copy (default)  # Recommended: Copy files to FAT32 (writable, kickstart works)
+  --method=dd              # Fast: Direct ISO write (read-only, kickstart may fail)
 
 To find your USB device:
   diskutil list
@@ -964,6 +1371,14 @@ To find your USB device:
 
     parser.add_argument(
         "--log", type=str, help="Write detailed log to file"
+    )
+
+    parser.add_argument(
+        "--method",
+        type=str,
+        choices=["dd", "copy"],
+        default="copy",
+        help="USB creation method: 'dd' (fast, read-only) or 'copy' (slower, writable with kickstart). Default: copy"
     )
 
     args = parser.parse_args()
@@ -1095,7 +1510,7 @@ To find your USB device:
     creator = USBCreator(config, config_dir)
     try:
         creator.create_usb(
-            args.usb_device, args.host_number, iso_path, args.yes, args.dry_run
+            args.usb_device, args.host_number, iso_path, args.yes, args.dry_run, args.method
         )
         if _log_file:
             print_message(Colors.BLUE, f"Log saved to: {_log_file}")

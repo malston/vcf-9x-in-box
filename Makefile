@@ -15,7 +15,7 @@ NC := \033[0m
 help: ## Display this help message
 	@echo "$(GREEN)VCF 9.x in a Box - Makefile Commands$(NC)"
 	@echo ""
-	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(BLUE)<target>$(NC)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "$(YELLOW)Usage:\n  $(BLUE)make$(NC) <target>\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-27s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Python Setup
 
@@ -106,7 +106,7 @@ deploy-vcf-installer: sync ## Deploy VCF Installer OVA to ESXi host
 	@uv run scripts/deploy_vcf_installer.py $(if $(CONFIG),--config $(CONFIG),)
 	@echo "$(GREEN)✓ VCF Installer deployed$(NC)"
 
-deploy-vcf-installer-dry-run: sync ## Preview VCF Installer deployment (dry run)
+deploy-vcf-installer-dryrun: sync ## Preview VCF Installer deployment (dry run)
 	@echo "$(YELLOW)Dry run: VCF Installer deployment$(NC)"
 	@uv run scripts/deploy_vcf_installer.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
@@ -115,7 +115,7 @@ setup-vcf-installer: sync ## Configure VCF Installer post-deployment
 	@uv run scripts/setup_vcf_installer.py $(if $(CONFIG),--config $(CONFIG),)
 	@echo "$(GREEN)✓ VCF Installer configured$(NC)"
 
-setup-vcf-installer-dry-run: sync ## Preview VCF Installer configuration (dry run)
+setup-vcf-installer-dryrun: sync ## Preview VCF Installer configuration (dry run)
 	@echo "$(YELLOW)Dry run: VCF Installer configuration$(NC)"
 	@uv run scripts/setup_vcf_installer.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
@@ -124,7 +124,7 @@ fix-vsan-policy: sync ## Fix vSAN ESA storage policy for 2-node deployments
 	@uv run scripts/fix_vsan_esa_default_storage_policy.py $(if $(CONFIG),--config $(CONFIG),)
 	@echo "$(GREEN)✓ vSAN storage policy fixed$(NC)"
 
-fix-vsan-policy-dry-run: sync ## Preview vSAN policy fix (dry run)
+fix-vsan-policy-dryrun: sync ## Preview vSAN policy fix (dry run)
 	@echo "$(YELLOW)Dry run: vSAN storage policy fix$(NC)"
 	@uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 

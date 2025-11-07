@@ -99,6 +99,26 @@ usb-create: ## Create bootable USB (usage: make usb-create USB=/dev/disk4 HOST=1
 usb-list: ## List available disk devices
 	@uv run scripts/create_esxi_usb.py --list
 
+refind-usb-create: ## Create rEFInd multi-host boot menu USB
+	@if [ -z "$(USB)" ]; then \
+		echo "$(RED)ERROR: USB not specified$(NC)"; \
+		echo "Usage: make refind-usb-create USB=/dev/disk4"; \
+		echo ""; \
+		echo "Creates a single USB with rEFInd boot menu for all hosts"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Creating rEFInd boot menu USB...$(NC)"
+	@sudo uv run scripts/create_refind_usb.py $(USB) $(if $(CONFIG),--config $(CONFIG),) $(if $(LABEL),--label $(LABEL),)
+
+refind-usb-dryrun: ## Preview rEFInd USB creation (dry run)
+	@if [ -z "$(USB)" ]; then \
+		echo "$(RED)ERROR: USB not specified$(NC)"; \
+		echo "Usage: make refind-usb-dryrun USB=/dev/disk4"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Dry run: rEFInd USB creation$(NC)"
+	@uv run scripts/create_refind_usb.py --dry-run $(USB) $(if $(CONFIG),--config $(CONFIG),)
+
 ##@ VCF Deployment
 
 deploy-vcf-installer: sync ## Deploy VCF Installer OVA to ESXi host

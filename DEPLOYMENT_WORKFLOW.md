@@ -31,8 +31,9 @@ This guide explains the complete deployment workflow from generating kickstart c
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Create Bootable USB Installers                          │
-│ Run: sudo make usb-create USB=/dev/disk4 HOST=1 (repeat x3)     │
+│ Step 3: Create Bootable USB Installer(s)                        │
+│ Option A: sudo make refind-usb-create USB=/dev/disk4 (once!)    │
+│ Option B: sudo make usb-create USB=/dev/disk4 HOST=1 (x3)       │
 │ └─> Creates: ESXi 9.0.0.0 USB installer with kickstart config   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -225,35 +226,134 @@ uv run scripts/generate_kickstart.py --help
 
 ### Step 3: Create Bootable ESXi USB Installers
 
-**Script:** `scripts/create_esxi_usb.py`
+**Choose Your Method:**
+
+You have two approaches for creating bootable ESXi USB installers:
+
+| Method | USBs Needed | Best For | Complexity |
+|--------|-------------|----------|------------|
+| **rEFInd Boot Menu** | 1 USB for all hosts | Multiple hosts, flexibility | Simple |
+| **Traditional** | 1 USB per host (or reuse) | Single host, automated | Simple |
+
+---
+
+#### Option A: rEFInd Boot Menu (Recommended for Multiple Hosts)
+
+**Script:** `scripts/create_refind_usb.py`
 
 **What It Does:**
 
-1. Takes ESXi 9.0.0.0 ISO
-2. Writes ISO to USB drive
-3. Copies kickstart config to USB as `KS.CFG`
-4. Modifies `BOOT.CFG` to use kickstart (automated installation)
+Creates a **single USB** with a custom UEFI boot menu that lets you select which host to install at boot time. All kickstart configs are embedded, and you choose the host from a visual menu.
 
 **How It Works:**
 
 ```
 Input:
   - ESXi ISO: VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso
-  - Kickstart: config/ks-esx01.cfg
+  - All kickstart configs: config/ks-esx01.cfg, ks-esx02.cfg, ks-esx03.cfg
   - USB Device: /dev/disk4
 
 Process:
-  1. Unmount USB device
-  2. Write ISO to USB using dd (creates bootable USB)
-  3. Mount USB partition
-  4. Copy ks-esx01.cfg → /Volumes/ESXi/KS.CFG
-  5. Edit /Volumes/ESXi/EFI/BOOT/BOOT.CFG
-     Before: kernelopt=<interactive installer options>
-     After:  kernelopt=ks=usb:/KS.CFG
-  6. Unmount and eject USB
+  1. Format USB as FAT32
+  2. Extract ESXi ISO contents to /esx9/ directory
+  3. Modify BOOT.CFG (add prefix=/esx9/, remove leading slashes)
+  4. Copy ALL kickstart configs to /kickstart/ directory (capitalized)
+  5. Download and install rEFInd boot manager (v0.14.2)
+  6. Create refind.conf with menu entries for each host
+  7. Unmount and eject USB
 
 Output:
-  - Bootable ESXi USB installer with embedded kickstart config
+  - Single bootable USB with visual boot menu for all hosts
+```
+
+**Commands:**
+
+```bash
+# Dry run first (preview only)
+make refind-usb-dryrun USB=/dev/disk4
+
+# List available USB devices
+make usb-list
+
+# Create rEFInd USB (ONE USB for ALL hosts)
+sudo make refind-usb-create USB=/dev/disk4
+
+# Or use Python directly
+sudo uv run scripts/create_refind_usb.py /dev/disk4
+```
+
+**What The USB Contains After Creation:**
+
+```
+/Volumes/VCF/
+├── kickstart/
+│   ├── KS-ESX01.CFG         # Host 1 kickstart config
+│   ├── KS-ESX02.CFG         # Host 2 kickstart config
+│   └── KS-ESX03.CFG         # Host 3 kickstart config
+├── esx9/
+│   ├── EFI/BOOT/BOOT.CFG    # Modified ESXi boot config
+│   ├── b.b00                # ESXi installer files
+│   ├── jumpstrt.gz
+│   └── ... (all ESXi ISO files)
+└── EFI/
+    └── BOOT/
+        ├── bootx64.efi      # rEFInd boot manager
+        ├── refind.conf      # Boot menu configuration
+        └── icons/           # rEFInd icons
+```
+
+**USB Usage:**
+
+1. Insert USB into **any** MS-A2 host
+2. Power on host
+3. Press F11 (or boot menu key)
+4. Select USB device
+5. **rEFInd boot menu appears** with options:
+   - ESXi 9.0 - esx01.vcf.lab
+   - ESXi 9.0 - esx02.vcf.lab
+   - ESXi 9.0 - esx03.vcf.lab
+6. Select the host you want to install
+7. Installation proceeds **automatically** (no user interaction)
+8. Host reboots twice (initial install + firstboot configuration)
+9. **Move USB to next host and repeat** (no need to recreate USB!)
+
+**Benefits:**
+
+- ✅ Create USB **once**, use for **all hosts**
+- ✅ Visual boot menu - easy to select correct host
+- ✅ No risk of using wrong kickstart config
+- ✅ Saves time - no USB recreation between hosts
+- ✅ All configs in one place
+
+---
+
+#### Option B: Traditional Method (Individual USB per Host)
+
+**Script:** `scripts/create_esxi_usb.py`
+
+**What It Does:**
+
+Creates a bootable USB for a **specific host**. Each USB has one kickstart config embedded and boots directly to installation (no menu).
+
+**How It Works:**
+
+```
+Input:
+  - ESXi ISO: VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso
+  - Kickstart: config/ks-esx01.cfg (for host 1)
+  - USB Device: /dev/disk4
+
+Process:
+  1. Format USB as FAT32
+  2. Mount ISO and copy all contents to USB
+  3. Copy ks-esx01.cfg → /Volumes/ESXI/KS.CFG
+  4. Edit /Volumes/ESXI/EFI/BOOT/BOOT.CFG
+     Before: kernelopt=runweasel cdromBoot
+     After:  kernelopt=ks=usb:/KS.CFG
+  5. Unmount and eject USB
+
+Output:
+  - Bootable ESXi USB installer for specific host
 ```
 
 **Commands:**
@@ -267,31 +367,24 @@ make usb-list
 
 # Create USB for host 1
 sudo make usb-create USB=/dev/disk4 HOST=1
+# ... insert USB in host 1, boot, wait for install ...
 
-# Create USB for host 2 (use same USB, recreates it)
+# Recreate USB for host 2 (same USB, overwrites previous)
 sudo make usb-create USB=/dev/disk4 HOST=2
+# ... insert USB in host 2, boot, wait for install ...
 
-# Create USB for host 3
+# Recreate USB for host 3
 sudo make usb-create USB=/dev/disk4 HOST=3
+# ... insert USB in host 3, boot, wait for install ...
 
 # Or use Python directly
 sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 ```
 
-**Input Files:**
-
-- ESXi ISO (from `esxi_iso_path` in config or `-i` flag)
-- Kickstart config: `config/ks-esx0X.cfg`
-- USB device: `/dev/diskX`
-
-**Output:**
-
-- Bootable USB drive ready to install ESXi on specific host
-
 **What The USB Contains After Creation:**
 
 ```
-/Volumes/ESXi/
+/Volumes/ESXI/
 ├── KS.CFG                    # Your kickstart config (ks-esx01.cfg)
 ├── EFI/
 │   └── BOOT/
@@ -304,13 +397,41 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 **USB Usage:**
 
-1. Insert USB into MS-A2 host
+1. Insert USB into specific MS-A2 host (matching the HOST number)
 2. Power on host
 3. Press F11 (or boot menu key)
 4. Select USB device
-5. Installation proceeds **automatically** (no user interaction)
+5. Installation proceeds **automatically** (no menu, no user interaction)
 6. Host reboots twice (initial install + firstboot configuration)
 7. ESXi ready at configured IP (e.g., 172.30.0.10)
+
+**Benefits:**
+
+- ✅ Simple and direct - boots straight to installation
+- ✅ Good for single host deployments
+- ✅ Familiar traditional approach
+
+**Drawbacks:**
+
+- ⚠️ Must recreate USB for each host
+- ⚠️ Risk of using wrong USB on wrong host
+- ⚠️ Takes more time overall (3x USB creation)
+
+---
+
+#### Comparison Summary
+
+| Feature | rEFInd Boot Menu | Traditional |
+|---------|------------------|-------------|
+| USB creation time | 8-10 min **once** | 8-10 min **per host** |
+| Total time (3 hosts) | ~10 min | ~30 min |
+| USB swapping | Move between hosts | Recreate for each host |
+| Host selection | Visual menu | Predetermined |
+| Error prevention | Can't pick wrong host | Could use wrong USB |
+| Flexibility | Can install any host anytime | Must match USB to host |
+| Complexity | One-time setup | Repeat process |
+
+**Recommendation:** Use **rEFInd Boot Menu** for 2+ hosts. Use **Traditional** if you prefer the direct approach or have only 1 host
 
 ---
 
@@ -749,9 +870,11 @@ config/ks-esx01.cfg                       # Generated kickstart
 config/ks-esx02.cfg
 config/ks-esx03.cfg
     ↓
-scripts/create_esxi_usb.py                # Embeds kickstart in USB
-    ↓
-USB Drive with KS.CFG                     # Bootable installer
+    ├─> scripts/create_refind_usb.py      # Option A: rEFInd boot menu (all hosts)
+    │   └─> USB with boot menu            # Single USB for all hosts
+    │
+    └─> scripts/create_esxi_usb.py        # Option B: Traditional (per host)
+        └─> USB with KS.CFG               # One USB per host
     ↓
 ESXi Installed on MS-A2                   # Physical hosts ready
     ↓
@@ -772,8 +895,9 @@ VCF Management Domain Deployed            # Complete VCF environment
 |-----------|---------|------------|---------|
 | `vcf-config.yaml` | Master configuration | User (manually edit) | All Python scripts |
 | `ks-template.cfg.j2` | Kickstart template | Project (version control) | `generate_kickstart.py` |
-| `ks-esx0X.cfg` | ESXi kickstart configs | `generate_kickstart.py` | `create_esxi_usb.py` |
-| USB Drive | Bootable ESXi installer | `create_esxi_usb.py` | Physical host (boot) |
+| `ks-esx0X.cfg` | ESXi kickstart configs | `generate_kickstart.py` | `create_esxi_usb.py`, `create_refind_usb.py` |
+| USB Drive (rEFInd) | Bootable USB with boot menu | `create_refind_usb.py` | Physical hosts (boot any host) |
+| USB Drive (traditional) | Bootable ESXi installer | `create_esxi_usb.py` | Physical host (boot specific host) |
 | ESXi Hosts | Running infrastructure | USB installer | `deploy_vcf_installer.py` |
 | VCF Installer OVA | Orchestrator appliance | VMware (download) | `deploy_vcf_installer.py` |
 | VCF Installer VM | Running orchestrator | `deploy_vcf_installer.py` | `setup_vcf_installer.py`, VCF deployment |
@@ -822,13 +946,31 @@ sudo make usb-create USB=/dev/disk4 HOST=1
 make usb-list
 ```
 
-#### Issue: ESXi doesn't boot from USB
+#### Issue: ESXi doesn't boot from USB (traditional method)
 
 ```bash
 # Verify BOOT.CFG was modified
 # Mount USB and check:
-cat /Volumes/ESXi/EFI/BOOT/BOOT.CFG | grep kernelopt
+cat /Volumes/ESXI/EFI/BOOT/BOOT.CFG | grep kernelopt
 # Should show: kernelopt=ks=usb:/KS.CFG
+```
+
+#### Issue: rEFInd boot menu doesn't appear
+
+```bash
+# Verify rEFInd installed correctly
+ls /Volumes/VCF/EFI/BOOT/bootx64.efi
+ls /Volumes/VCF/EFI/BOOT/refind.conf
+
+# Check refind.conf has menu entries
+cat /Volumes/VCF/EFI/BOOT/refind.conf | grep menuentry
+
+# Verify kickstart files exist
+ls /Volumes/VCF/kickstart/
+# Should show: KS-ESX01.CFG, KS-ESX02.CFG, KS-ESX03.CFG
+
+# Verify ESXi files in esx9 directory
+ls /Volumes/VCF/esx9/EFI/BOOT/BOOT.CFG
 ```
 
 #### Issue: Kickstart doesn't run (interactive install starts)
@@ -884,7 +1026,13 @@ vim config/vcf-config.yaml
 # 2. Generate kickstart configs
 make generate
 
-# 3. Create USB installers (one USB, reused for each host)
+# 3a. Create USB installer with rEFInd (RECOMMENDED - one USB for all hosts)
+sudo make refind-usb-create USB=/dev/disk4
+# ... insert USB in host 1, boot, select "esx01" from menu, wait for install ...
+# ... move USB to host 2, boot, select "esx02" from menu, wait for install ...
+# ... move USB to host 3, boot, select "esx03" from menu, wait for install ...
+
+# 3b. OR create USB installers traditionally (one USB, recreated for each host)
 sudo make usb-create USB=/dev/disk4 HOST=1
 # ... insert USB in host 1, boot, wait for install ...
 sudo make usb-create USB=/dev/disk4 HOST=2
@@ -927,17 +1075,19 @@ tail -f /var/log/vmware/vcf/bringup/vcf-bringup.log
 
 ### Time Estimates
 
-| Step | Duration | Parallelizable |
-|------|----------|----------------|
-| Configure YAML | 15 min | - |
-| Generate kickstart | <1 min | - |
-| Create USB (per host) | 5-10 min | No (same USB) |
-| Install ESXi (per host) | 15-20 min | Yes (3 USB drives) |
-| Deploy VCF Installer | 10 min | - |
-| Configure VCF Installer | 5 min | - |
-| Download binaries | 30-60 min | - |
-| VCF deployment | 3-4 hours | - |
-| **Total** | **~5-6 hours** | |
+| Step | Duration | Parallelizable | Notes |
+|------|----------|----------------|-------|
+| Configure YAML | 15 min | - | One time |
+| Generate kickstart | <1 min | - | One time |
+| **Create USB (rEFInd)** | **8-10 min** | - | **One time for all hosts** |
+| Create USB (traditional) | 8-10 min per host | No (same USB) | 24-30 min total for 3 hosts |
+| Install ESXi (per host) | 15-20 min | Yes (3 USB drives) | 45-60 min if parallel, 45-60 min if sequential |
+| Deploy VCF Installer | 10 min | - | One time |
+| Configure VCF Installer | 5 min | - | One time |
+| Download binaries | 30-60 min | - | One time |
+| VCF deployment | 3-4 hours | - | One time |
+| **Total (with rEFInd)** | **~5-5.5 hours** | | **~20 min saved vs traditional** |
+| **Total (traditional)** | **~5.5-6 hours** | | |
 
 ### Key Takeaways
 

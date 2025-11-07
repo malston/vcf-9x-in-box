@@ -30,7 +30,7 @@ common:
 vcf_installer:
   # VCF Installer OVA path
   # Download from: https://support.broadcom.com/
-  ova_path: "/Volumes/carbonite.markalston.net/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+  ova_path: "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
 
   # VCF Installer VM configuration
   vm_name: "sddcm01"

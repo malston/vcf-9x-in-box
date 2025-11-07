@@ -35,7 +35,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, "r") as f:
+        with open(config_file, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         # Validate required sections
@@ -58,14 +58,12 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     except yaml.YAMLError as e:
         print(f"{Colors.RED}ERROR: Failed to parse YAML config: {e}{Colors.NC}")
         sys.exit(1)
-    except Exception as e:
+    except (FileNotFoundError, PermissionError, OSError) as e:
         print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
         sys.exit(1)
 
 
-def run_command(
-    cmd: list, description: str = "", capture_output: bool = False
-) -> Optional[str]:
+def run_command(cmd: list, capture_output: bool = False) -> Optional[str]:
     """Run a shell command and handle errors"""
     try:
         if capture_output:
@@ -128,6 +126,12 @@ def verify_usb_device(device: str, skip_confirm: bool = False, dry_run: bool = F
         total_size = ""
         protocol = ""
 
+        if output is None:
+            print(
+                f"{Colors.RED}ERROR: Failed to get device info for {device}{Colors.NC}"
+            )
+            sys.exit(1)
+
         for line in output.splitlines():
             if "Device / Media Name:" in line:
                 device_name = line.split(":", 1)[1].strip()
@@ -154,7 +158,7 @@ def verify_usb_device(device: str, skip_confirm: bool = False, dry_run: bool = F
                 f"{Colors.YELLOW}WARNING: Device does not appear to be USB (Protocol: {protocol}){Colors.NC}"
             )
 
-    except Exception as e:
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         print(f"{Colors.RED}ERROR: Unable to get info for device {device}{Colors.NC}")
         sys.exit(1)
 
@@ -267,6 +271,7 @@ class USBCreator:
                 ["diskutil", "unmountDisk", usb_device],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                check=False,
             )
 
         # Write ISO to USB
@@ -341,6 +346,12 @@ class USBCreator:
                 output = run_command(
                     ["diskutil", "info", usb_partition], capture_output=True
                 )
+                if output is None:
+                    print(
+                        f"{Colors.RED}ERROR: Could not get device info for {usb_partition}{Colors.NC}"
+                    )
+                    sys.exit(1)
+
                 for line in output.splitlines():
                     if "Mount Point:" in line:
                         mount_point = line.split(":", 1)[1].strip()
@@ -400,13 +411,14 @@ class USBCreator:
             finally:
                 # Unmount and eject USB
                 print(f"{Colors.YELLOW}Ejecting USB device...{Colors.NC}")
-                subprocess.run(["sync"])
+                subprocess.run(["sync"], check=False)
                 subprocess.run(
                     ["diskutil", "unmount", mount_point],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    check=False,
                 )
-                subprocess.run(["diskutil", "eject", usb_device])
+                subprocess.run(["diskutil", "eject", usb_device], check=False)
                 print(f"{Colors.GREEN}✓{Colors.NC} USB device ejected")
 
         # Summary
@@ -501,7 +513,7 @@ To find your USB device:
     # Handle --list option
     if args.list:
         print(f"{Colors.GREEN}Available Disk Devices:{Colors.NC}\n")
-        subprocess.run(["diskutil", "list"])
+        subprocess.run(["diskutil", "list"], check=False)
         sys.exit(0)
 
     # Validate required arguments
@@ -531,7 +543,14 @@ To find your USB device:
         iso_path = config["common"]["esxi_iso_path"]
     else:
         # Default path
-        iso_path = "/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/ESX_HOST/VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso"
+        print(f"{Colors.RED}ERROR: ESXi ISO path not specified{Colors.NC}")
+        print("Please specify the ESXi ISO path using one of these methods:")
+        print("1. Use the -i/--iso command line option:")
+        print(
+            "   Example: sudo uv run scripts/create_esxi_usb.py /dev/disk2 1 -i /path/to/esxi.iso"
+        )
+        print("2. Add 'esxi_iso_path' to the 'common' section in your config file")
+        sys.exit(1)
 
     # Print header
     print(f"{Colors.GREEN}========================================{Colors.NC}")

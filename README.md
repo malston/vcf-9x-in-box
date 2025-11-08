@@ -72,6 +72,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 **❓ NEW:** Common questions and answers about VCF 9.x in a Box deployment. See **[FAQ.md](FAQ.md)**.
 
 **Popular topics:**
+
 * Do I need 3 separate USB drives? (No, you can reuse one!)
 * Does previous ESXi installation matter? (No, kickstart handles it!)
 * How long does deployment take? (~5-6 hours total)
@@ -272,7 +273,7 @@ The following configuration files are included in the `config/` directory:
 | [`ks-esx03.cfg`](config/ks-esx03.cfg) | ESXi kickstart configuration for third physical host (generated from YAML) |
 | [`vcf90-two-node.json`](config/vcf90-two-node.json) | VCF deployment manifest for two-node fleet (failuresToTolerate=0) |
 | [`vcf90-three-node.json`](config/vcf90-three-node.json) | VCF deployment manifest for three-node fleet (failuresToTolerate=1) |
-| [`unbound.conf`](config/unbound.conf) | DNS server configuration (optional - for local DNS setup) |
+| [`pi-hole.conf`](config/pi-hole.conf) | DNS server configuration (optional - for local DNS setup) |
 
 ## Automation Scripts
 
@@ -542,7 +543,7 @@ updated=0
 
 ![](screenshots/screenshot-3.png)
 
-7. (Optional) If you do not already have a DNS server running within your enviornment or would like to localized this setup, you can deploy a VMware PhotonOS VM and use that as your DNS server. You can use my [unbound.conf](config/unbound.conf) as an exmaple setup and copy it to `/etc/unbound` directory after installing Unbound following the snippet below:
+7. (Optional) If you do not already have a DNS server running within your enviornment or would like to localized this setup, you can deploy a VMware PhotonOS VM and use that as your DNS server. You can use my [pi-hole.conf](config/pi-hole.conf) as an exmaple setup and copy it to `/etc/unbound/unbound.conf.d/pi-hole.conf` directory after installing Unbound following the snippet below:
 
 ```
 tdnf update -y

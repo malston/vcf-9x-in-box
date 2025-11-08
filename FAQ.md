@@ -142,17 +142,17 @@ Total hands-off time once you insert the USB and power on.
 1. **No more reboots happening**
 2. **ESXi console shows login screen** with:
    - Hostname (e.g., `esx01.vcf.lab`)
-   - IP address (e.g., `172.30.0.10`)
+   - IP address (e.g., `172.30.0.11`)
    - ESXi version: `VMware ESXi 9.0.0 build-24755229`
 
 3. **Can access via web browser:**
-   - Navigate to `https://172.30.0.10` (or .11, .12)
+   - Navigate to `https://172.30.0.11` (or .12, .13)
    - Should see ESXi web interface
 
 4. **SSH is accessible:**
 
    ```bash
-   ssh root@172.30.0.10
+   ssh root@172.30.0.11
    # Should connect without errors
    ```
 
@@ -193,7 +193,7 @@ t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500
 If you already have ESXi installed:
 
 ```bash
-ssh root@172.30.0.10
+ssh root@172.30.0.11
 esxcli storage core device list | grep -i "Display Name\|Device Type"
 ```
 
@@ -300,7 +300,7 @@ uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run
 **How to verify:**
 
 ```bash
-ssh root@172.30.0.10 "vmware -v"
+ssh root@172.30.0.11 "vmware -v"
 # Must show: VMware ESXi 9.0.0 build-24755229
 ```
 
@@ -407,7 +407,7 @@ network:
 
    ```bash
    # Ping first
-   ping 172.30.0.10
+   ping 172.30.0.11
 
    # Check from ESXi console - should show IP
    # Wait for both reboots to complete (~20 min total)
@@ -425,7 +425,7 @@ network:
 
    ```bash
    # Use IP instead of hostname
-   ssh root@172.30.0.10  # Instead of root@esx01.vcf.lab
+   ssh root@172.30.0.11  # Instead of root@esx01.vcf.lab
    ```
 
 4. **Kickstart firstboot didn't complete:**
@@ -445,7 +445,7 @@ network:
 1. **Check actual datastore name on ESXi:**
 
    ```bash
-   ssh root@172.30.0.10 "esxcli storage filesystem list"
+   ssh root@172.30.0.11 "esxcli storage filesystem list"
    # Note the exact datastore name
    ```
 

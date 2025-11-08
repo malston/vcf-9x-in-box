@@ -40,7 +40,7 @@ This guide explains the complete deployment workflow from generating kickstart c
 ┌─────────────────────────────────────────────────────────────────┐
 │ Step 4: Install ESXi on Physical Hosts                          │
 │ Boot each MS-A2 from USB                                        │
-│ └─> Result: 3 ESXi 9.0.0.0 hosts at 172.30.0.10, .11, .12       │
+│ └─> Result: 3 ESXi 9.0.0.0 hosts at 172.30.0.11, .12, .13       │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -122,7 +122,7 @@ common:
 hosts:
   - number: 1
     hostname: "esx01.vcf.lab"
-    ip: "172.30.0.10"
+    ip: "172.30.0.11"
     install_disk: "t10.NVMe____Samsung_SSD_980_500GB___..."
     tiering_disk: "t10.NVMe____Samsung_SSD_990_PRO_4TB___..."
 ```
@@ -201,7 +201,7 @@ install --disk=<NVMe device> --overwritevmfs
 rootpw VMware1!
 
 # Network configuration
-network --bootproto=static --ip=172.30.0.10 --netmask=255.255.255.0 \
+network --bootproto=static --ip=172.30.0.11 --netmask=255.255.255.0 \
         --gateway=172.30.0.1 --hostname=esx01.vcf.lab --vlanid=30
 
 # Post-installation commands (firstboot)
@@ -403,7 +403,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 4. Select USB device
 5. Installation proceeds **automatically** (no menu, no user interaction)
 6. Host reboots twice (initial install + firstboot configuration)
-7. ESXi ready at configured IP (e.g., 172.30.0.10)
+7. ESXi ready at configured IP (e.g., 172.30.0.11)
 
 **Benefits:**
 
@@ -474,7 +474,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 ```
 12. ESXi fully configured and running
 13. Accessible via:
-    - https://172.30.0.10 (or .11, .12)
+    - https://172.30.0.11 (or .12, .13)
     - https://esx01.vcf.lab (or esx02, esx03)
 14. SSH enabled on port 22
 15. Ready for VCF Installer deployment
@@ -484,29 +484,29 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 ```bash
 # From your management system
-ping 172.30.0.10
 ping 172.30.0.11
 ping 172.30.0.12
+ping 172.30.0.13
 
 # SSH to each host (verify SSH enabled)
-ssh root@172.30.0.10  # Password: VMware1!
+ssh root@172.30.0.11  # Password: VMware1!
 
 # Verify ESXi version (MUST be 9.0.0.0 build 24755229)
-ssh root@172.30.0.10 "vmware -v"
+ssh root@172.30.0.11 "vmware -v"
 # Output: VMware ESXi 9.0.0 build-24755229
 
 # Verify NVMe tiering configured
-ssh root@172.30.0.10 "esxcli nvme device list"
+ssh root@172.30.0.11 "esxcli nvme device list"
 
 # Verify datastore created
-ssh root@172.30.0.10 "esxcli storage filesystem list"
+ssh root@172.30.0.11 "esxcli storage filesystem list"
 ```
 
 **Result:** Three ESXi hosts ready for VCF deployment:
 
-- esx01.vcf.lab (172.30.0.10) ✓
-- esx02.vcf.lab (172.30.0.11) ✓
-- esx03.vcf.lab (172.30.0.12) ✓
+- esx01.vcf.lab (172.30.0.11) ✓
+- esx02.vcf.lab (172.30.0.12) ✓
+- esx03.vcf.lab (172.30.0.13) ✓
 
 ---
 
@@ -530,9 +530,9 @@ ssh root@172.30.0.10 "esxcli storage filesystem list"
 
 **How It Works:**
 
-```
+```markdown
 Prerequisites:
-  - ESXi 9.0.0.0 running on esx01 (172.30.0.10)
+  - ESXi 9.0.0.0 running on esx01 (172.30.0.11)
   - SSH enabled on esx01
   - VCF Installer OVA downloaded
   - OVFTool installed locally
@@ -586,7 +586,7 @@ uv run scripts/deploy_vcf_installer.py
 **Input Files:**
 
 - VCF Installer OVA: `VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova`
-- Target ESXi host: `esx01.vcf.lab` (172.30.0.10)
+- Target ESXi host: `esx01.vcf.lab` (172.30.0.11)
 
 **Output:**
 
@@ -606,7 +606,7 @@ curl -k https://172.30.0.21
 ssh root@172.30.0.21  # Password: VMware1!VMware1!
 
 # From ESXi host, verify VM is running
-ssh root@172.30.0.10
+ssh root@172.30.0.11
 vim-cmd vmsvc/getallvms | grep -i sddc
 vim-cmd vmsvc/power.getstate <vmid>
 ```
@@ -987,14 +987,14 @@ cat /Volumes/ESXi/EFI/BOOT/BOOT.CFG | grep "ks=usb"
 
 ```bash
 # Verify ESXi version
-ssh root@172.30.0.10 "vmware -v"
+ssh root@172.30.0.11 "vmware -v"
 # MUST show: VMware ESXi 9.0.0 build-24755229
 
 # Verify SSH enabled on ESXi
-ssh root@172.30.0.10 "esxcli system settings advanced list -o /UserVars/SuppressShellWarning"
+ssh root@172.30.0.11 "esxcli system settings advanced list -o /UserVars/SuppressShellWarning"
 
 # Verify datastore exists
-ssh root@172.30.0.10 "esxcli storage filesystem list"
+ssh root@172.30.0.11 "esxcli storage filesystem list"
 ```
 
 #### Issue: VCF deployment validation fails
@@ -1009,8 +1009,8 @@ nslookup esx03.vcf.lab 192.168.10.2
 # Verify VLANs 30, 40, 50, 60 are created and trunked
 
 # Check ESXi network connectivity
-ssh root@172.30.0.10 "esxcfg-vswitch -l"
-ssh root@172.30.0.10 "esxcfg-vmknic -l"
+ssh root@172.30.0.11 "esxcfg-vswitch -l"
+ssh root@172.30.0.11 "esxcfg-vmknic -l"
 ```
 
 ---
@@ -1041,9 +1041,9 @@ sudo make usb-create USB=/dev/disk4 HOST=3
 # ... insert USB in host 3, boot, wait for install ...
 
 # 4. Verify ESXi installed
-ssh root@172.30.0.10 "vmware -v"
 ssh root@172.30.0.11 "vmware -v"
 ssh root@172.30.0.12 "vmware -v"
+ssh root@172.30.0.13 "vmware -v"
 
 # 5. Deploy VCF Installer
 make deploy-vcf-installer

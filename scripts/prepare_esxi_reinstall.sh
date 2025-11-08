@@ -23,15 +23,15 @@ NEW_DOMAIN="vcf.lab"
 NTP_SERVER="pool.ntp.org"
 
 # ESXi Host 1 Configuration
-ESX01_IP="172.30.0.10"
+ESX01_IP="172.30.0.11"
 ESX01_HOSTNAME="esx01.vcf.lab"
 
 # ESXi Host 2 Configuration
-ESX02_IP="172.30.0.11"
+ESX02_IP="172.30.0.12"
 ESX02_HOSTNAME="esx02.vcf.lab"
 
 # ESXi Host 3 Configuration
-ESX03_IP="172.30.0.12"
+ESX03_IP="172.30.0.13"
 ESX03_HOSTNAME="esx03.vcf.lab"
 
 # Root Password
@@ -41,11 +41,11 @@ ROOT_PASSWORD="VMware1!"
 # Run 'vdq -q' on ESXi console to find these values
 ESX01_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________7F17A051D3382500"  # Boot/Install disk for ESX01
 ESX02_INSTALL_DISK="t10.NVMe____Samsung_SSD_980_500GB___________________9E17A051D3382500"  # Boot/Install disk for ESX02
-ESX03_INSTALL_DISK="t10.NVMe____PLACEHOLDER_INSTALL_DISK__________________CHANGE_ME"  # Boot/Install disk for ESX03 - MUST BE UPDATED!
+ESX03_INSTALL_DISK="t10.NVMe____SHGP312D500GM____________________________00E3E126002EE4AC"  # Boot/Install disk for ESX03
 
 ESX01_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500"  # NVMe Tiering disk for ESX01
 ESX02_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________84A9415145382500"  # NVMe Tiering disk for ESX02
-ESX03_TIERING_DISK="t10.NVMe____PLACEHOLDER_TIERING_DISK______________CHANGE_ME"  # NVMe Tiering disk for ESX03 - MUST BE UPDATED!
+ESX03_TIERING_DISK="t10.NVMe____Samsung_SSD_990_PRO_4TB_________________8639A15148382500"  # NVMe Tiering disk for ESX03
 
 # SSH Public Key (optional - leave empty if not using)
 SSH_ROOT_KEY=""
@@ -373,9 +373,9 @@ For each ESXi host:
    - First reboot: After initial ESXi installation
    - Second reboot: After firstboot script completes configuration
 9. After final reboot, the host should be accessible at:
-   - ESX01: https://172.30.0.10 or https://esx01.vcf.lab
-   - ESX02: https://172.30.0.11 or https://esx02.vcf.lab
-   - ESX03: https://172.30.0.12 or https://esx03.vcf.lab
+   - ESX01: https://172.30.0.11 or https://esx01.vcf.lab
+   - ESX02: https://172.30.0.12 or https://esx02.vcf.lab
+   - ESX03: https://172.30.0.13 or https://esx03.vcf.lab
 
 ## Step 4: Verify Installation
 
@@ -385,7 +385,7 @@ Login to each host via web UI or SSH:
 
 Verify:
 - Hostname is correct (esx01.vcf.lab, esx02.vcf.lab, or esx03.vcf.lab)
-- IP address is correct (172.30.0.10, 172.30.0.11, or 172.30.0.12)
+- IP address is correct (172.30.0.11, 172.30.0.12, or 172.30.0.13)
 - VLAN 30 is configured on management network
 - DNS resolution works
 - NTP is configured and syncing

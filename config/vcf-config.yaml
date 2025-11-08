@@ -66,7 +66,7 @@ vcenter:
 hosts:
   - number: 1
     hostname: "esx01.vcf.lab"
-    ip: "172.30.0.10"
+    ip: "172.30.0.11"
     # NVMe device identifiers - Run 'vdq -q' on ESXi console to find these
     install_disk: "t10.NVMe____Samsung_SSD_980_500GB___________________7F17A051D3382500"
     tiering_disk: "t10.NVMe____Samsung_SSD_990_PRO_4TB_________________72A9415145382500"
@@ -74,14 +74,14 @@ hosts:
 
   - number: 2
     hostname: "esx02.vcf.lab"
-    ip: "172.30.0.11"
+    ip: "172.30.0.12"
     install_disk: "t10.NVMe____Samsung_SSD_980_500GB___________________9E17A051D3382500"
     tiering_disk: "t10.NVMe____Samsung_SSD_990_PRO_4TB_________________84A9415145382500"
     datastore_name: "local-vmfs-datastore-2"
 
   - number: 3
     hostname: "esx03.vcf.lab"
-    ip: "172.30.0.12"
+    ip: "172.30.0.13"
     # IMPORTANT: Update these with your actual NVMe device identifiers!
     install_disk: "t10.NVMe____SHGP312D500GM____________________________00E3E126002EE4AC"
     tiering_disk: "t10.NVMe____Samsung_SSD_990_PRO_4TB_________________8639A15148382500"

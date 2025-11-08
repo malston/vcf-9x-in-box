@@ -102,7 +102,7 @@ vcf_installer:
 # vCenter Configuration
 vcenter:
   hostname: "vc01.vcf.lab"
-  ip: "172.30.0.13"
+  ip: "172.30.0.10"
   username: "administrator@vsphere.local"
   password: "..."
 

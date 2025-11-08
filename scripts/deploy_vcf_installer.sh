@@ -16,7 +16,7 @@ if [[ ! -f "$VCF_INSTALLER_OVA" ]]; then
     exit 1
 fi
 
-ESXI_HOST="172.30.0.10"
+ESXI_HOST="172.30.0.11"
 ESXI_USERNAME="root"
 ESXI_PASSWORD="VMware1!"
 VM_NETWORK="VM Network"

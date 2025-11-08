@@ -423,10 +423,10 @@ For two-node deployments **ONLY**, run this script **immediately after starting 
 | Hostname   | FQDN                | IP Address   | Function                                 |
 |------------|---------------------|--------------|------------------------------------------|
 | dns        | dns.vcf.lab         | 192.168.10.2 | DNS Server                               |
-| esx01      | esx01.vcf.lab       | 172.30.0.10  | Physical ESX-1 Server                    |
-| esx02      | esx02.vcf.lab       | 172.30.0.11  | Physical ESX-2 Server                    |
-| esx03      | esx03.vcf.lab       | 172.30.0.12  | Physical ESX-3 Server                    |
-| vc01       | vc01.vcf.lab        | 172.30.0.13  | vCenter Server for Management Domain     |
+| vc01       | vc01.vcf.lab        | 172.30.0.10  | vCenter Server for Management Domain     |
+| esx01      | esx01.vcf.lab       | 172.30.0.11  | Physical ESX-1 Server                    |
+| esx02      | esx02.vcf.lab       | 172.30.0.12  | Physical ESX-2 Server                    |
+| esx03      | esx03.vcf.lab       | 172.30.0.13  | Physical ESX-3 Server                    |
 | vcf01      | vcf01.vcf.lab       | 172.30.0.14  | VCF Operations                           |
 | nsx01      | nsx01.vcf.lab       | 172.30.0.15  | NSX Manager VIP for Management Domain    |
 | nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16  | NSX Manager for Management Domain        |
@@ -436,6 +436,7 @@ For two-node deployments **ONLY**, run this script **immediately after starting 
 | opsproxy01 | opsproxy01.vcf.lab  | 172.30.0.20  | VCF Operations Proxy Collector           |
 | sddcm01    | sddcm01.vcf.lab     | 172.30.0.21  | VCF Installer / SDDC Manager             |
 | auto01     | auto01.vcf.lab      | 172.30.0.30  | VCF Automation                           |
+| sv01       | sv01.vcf.lab        | 172.30.0.40  | VKS Supervisor                           |
 
 ## Installation
 

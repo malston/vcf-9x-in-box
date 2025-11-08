@@ -246,7 +246,10 @@ class ReFindUSBCreator:
         print(f"  - /Volumes/{usb_label}/esx9/")
         print(f"  - /Volumes/{usb_label}/kickstart/")
         print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would extract ISO contents to /esx9/")
-        print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would modify BOOT.CFG")
+        print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would modify main BOOT.CFG")
+        print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would create host-specific BOOT directories:")
+        for host_num in sorted(self.config["hosts_dict"].keys()):
+            print(f"  - /Volumes/{usb_label}/esx9/ks{host_num}/BOOT/")
         print(f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would copy kickstart files")
         print(
             f"{Colors.BLUE}[DRY RUN]{Colors.NC} Would download rEFInd {self.REFIND_VERSION}"
@@ -265,7 +268,7 @@ class ReFindUSBCreator:
         """Execute the actual USB creation steps"""
 
         # Step 1: Partition USB as FAT32
-        print_message(Colors.YELLOW, "Step 1/8: Partitioning USB as FAT32...")
+        print_message(Colors.YELLOW, "Step 1/9: Partitioning USB as FAT32...")
         try:
             subprocess.run(
                 ["diskutil", "unmountDisk", usb_device],
@@ -301,7 +304,7 @@ class ReFindUSBCreator:
             sys.exit(1)
 
         # Step 2: Create directory structure
-        print_message(Colors.YELLOW, "Step 2/8: Creating directory structure...")
+        print_message(Colors.YELLOW, "Step 2/9: Creating directory structure...")
         try:
             (usb_mount / "EFI" / "BOOT").mkdir(parents=True, exist_ok=True)
             (usb_mount / "esx9").mkdir(parents=True, exist_ok=True)
@@ -314,7 +317,7 @@ class ReFindUSBCreator:
         # Step 3: Extract ISO contents
         print_message(
             Colors.YELLOW,
-            "Step 3/8: Extracting ESXi ISO contents (this may take 5-10 minutes)...",
+            "Step 3/9: Extracting ESXi ISO contents (this may take 5-10 minutes)...",
         )
         iso_mount = self._mount_iso(iso_path)
         try:
@@ -333,22 +336,26 @@ class ReFindUSBCreator:
         finally:
             self._unmount_iso(iso_mount)
 
-        # Step 4: Modify BOOT.CFG
-        print_message(Colors.YELLOW, "Step 4/8: Modifying BOOT.CFG...")
+        # Step 4: Modify main BOOT.CFG
+        print_message(Colors.YELLOW, "Step 4/9: Modifying BOOT.CFG...")
         self._modify_boot_cfg(usb_mount / "esx9" / "EFI" / "BOOT" / "BOOT.CFG")
 
-        # Step 5: Copy kickstart files
-        print_message(Colors.YELLOW, "Step 5/8: Copying kickstart files...")
+        # Step 5: Create ks1, ks2, ks3 directories with BOOT copies
+        print_message(Colors.YELLOW, "Step 5/9: Creating per-host BOOT directories...")
+        self._create_host_boot_dirs(usb_mount / "esx9")
+
+        # Step 6: Copy kickstart files
+        print_message(Colors.YELLOW, "Step 6/9: Copying kickstart files...")
         self._copy_kickstart_files(usb_mount / "kickstart")
 
-        # Step 6: Download and extract rEFInd
+        # Step 7: Download and extract rEFInd
         print_message(
-            Colors.YELLOW, f"Step 6/8: Downloading rEFInd {self.REFIND_VERSION}..."
+            Colors.YELLOW, f"Step 7/9: Downloading rEFInd {self.REFIND_VERSION}..."
         )
         refind_binary = self._download_refind()
 
-        # Step 7: Install rEFInd bootloader
-        print_message(Colors.YELLOW, "Step 7/8: Installing rEFInd bootloader...")
+        # Step 8: Install rEFInd bootloader
+        print_message(Colors.YELLOW, "Step 8/9: Installing rEFInd bootloader...")
         try:
             shutil.copy(refind_binary, usb_mount / "EFI" / "BOOT" / "bootx64.efi")
             print_message(Colors.GREEN, "✓ rEFInd bootloader installed")
@@ -356,8 +363,8 @@ class ReFindUSBCreator:
             print_message(Colors.RED, f"ERROR: Failed to install rEFInd: {e}")
             sys.exit(1)
 
-        # Step 8: Create rEFInd configuration
-        print_message(Colors.YELLOW, "Step 8/8: Creating rEFInd boot menu...")
+        # Step 9: Create rEFInd configuration
+        print_message(Colors.YELLOW, "Step 9/9: Creating rEFInd boot menu...")
         self._create_refind_config(usb_mount / "EFI" / "BOOT" / "refind.conf")
 
         # Eject USB
@@ -444,6 +451,44 @@ class ReFindUSBCreator:
             print_message(Colors.RED, f"ERROR: Failed to modify BOOT.CFG: {e}")
             sys.exit(1)
 
+    def _create_host_boot_dirs(self, esx9_dir: Path):
+        """Create ks1, ks2, ks3 directories with copies of BOOT directory and modified BOOT.CFG"""
+        try:
+            source_boot_dir = esx9_dir / "EFI" / "BOOT"
+
+            for host_num in sorted(self.config["hosts_dict"].keys()):
+                # Create ksX/BOOT directory
+                ks_boot_dir = esx9_dir / f"ks{host_num}" / "BOOT"
+                ks_boot_dir.mkdir(parents=True, exist_ok=True)
+
+                # Copy all files from source BOOT directory
+                for file in source_boot_dir.iterdir():
+                    if file.is_file():
+                        shutil.copy(file, ks_boot_dir / file.name)
+
+                # Modify BOOT.CFG to add kickstart parameter
+                boot_cfg = ks_boot_dir / "BOOT.CFG"
+                if boot_cfg.exists():
+                    content = boot_cfg.read_text()
+                    new_content = []
+
+                    for line in content.splitlines():
+                        if line.startswith("kernelopt="):
+                            # Add kickstart parameter
+                            new_content.append(f"kernelopt=ks=usb:/kickstart/KS-ESX0{host_num}.CFG")
+                        else:
+                            new_content.append(line)
+
+                    boot_cfg.write_text("\n".join(new_content) + "\n")
+
+            print_message(
+                Colors.GREEN,
+                f"✓ Created {len(self.config['hosts_dict'])} host-specific BOOT directories",
+            )
+        except Exception as e:
+            print_message(Colors.RED, f"ERROR: Failed to create host BOOT directories: {e}")
+            sys.exit(1)
+
     def _copy_kickstart_files(self, kickstart_dir: Path):
         """Copy kickstart files to USB with capitalized filenames"""
         try:
@@ -519,8 +564,7 @@ class ReFindUSBCreator:
                 config_lines.extend(
                     [
                         f'menuentry "ESXi 9.0 - {host["hostname"]}" {{',
-                        f"    loader /esx9/efi/boot/bootx64.efi",
-                        f'    options "ks=usb:/kickstart/KS-ESX0{host_num}.CFG"',
+                        f"    loader /esx9/ks{host_num}/BOOT/BOOTX64.EFI",
                         "}",
                         "",
                     ]

@@ -14,17 +14,20 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Dict, Optional
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: pip install pyyaml")
-    sys.exit(1)
+# Add scripts directory to path for vcf_secrets import
+sys.path.insert(0, str(Path(__file__).parent))
+
+# pylint: disable=wrong-import-position
+from vcf_secrets import load_config_with_secrets
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
+    """ANSI color codes for terminal output"""
+
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[1;33m"
@@ -409,38 +412,17 @@ def verify_checksum(
 
 
 def load_config(config_file: Path) -> Dict[str, Any]:
-    """Load configuration from YAML file"""
-    if not config_file.exists():
-        print(f"{Colors.RED}ERROR: Config file not found: {config_file}{Colors.NC}")
-        sys.exit(1)
+    """Load configuration from YAML file with secrets"""
+    # Load config with secrets (handles passwords from env/secrets file)
+    config = load_config_with_secrets(config_file)
 
-    try:
-        with open(config_file, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
+    # Convert hosts list to dict for easier access
+    hosts_dict = {}
+    for host in config["hosts"]:
+        hosts_dict[host["number"]] = host
 
-        # Validate required sections
-        required_sections = ["network", "common", "hosts"]
-        for section in required_sections:
-            if section not in config:
-                print(
-                    f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}"
-                )
-                sys.exit(1)
-
-        # Convert hosts list to dict for easier access
-        hosts_dict = {}
-        for host in config["hosts"]:
-            hosts_dict[host["number"]] = host
-
-        config["hosts_dict"] = hosts_dict
-        return config
-
-    except yaml.YAMLError as e:
-        print(f"{Colors.RED}ERROR: Failed to parse YAML config: {e}{Colors.NC}")
-        sys.exit(1)
-    except (FileNotFoundError, PermissionError, OSError) as e:
-        print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
-        sys.exit(1)
+    config["hosts_dict"] = hosts_dict
+    return config
 
 
 def run_command(cmd: list, capture_output: bool = False) -> Optional[str]:

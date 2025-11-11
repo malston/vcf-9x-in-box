@@ -23,7 +23,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = []
+dev = [
+    "ruff>=0.14.4",
+    "types-pyvmomi>=8.0.0.6",
+    "types-pyyaml>=6.0.12.20241230",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["scripts"]

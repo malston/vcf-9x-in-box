@@ -7,61 +7,41 @@ Purpose: Generate ESXi kickstart configs from Jinja2 template
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
-try:
-    from jinja2 import Environment, FileSystemLoader, Template
-except ImportError:
-    print("ERROR: jinja2 module not found. Install with: pip install jinja2")
-    sys.exit(1)
+from jinja2 import Environment, FileSystemLoader
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: pip install pyyaml")
-    sys.exit(1)
+# Add scripts directory to path for vcf_secrets import
+sys.path.insert(0, str(Path(__file__).parent))
+
+# pylint: disable=wrong-import-position
+from vcf_secrets import load_config_with_secrets
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
+    """ANSI color codes for terminal output"""
+
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
 
 def load_config(config_file: Path) -> Dict[str, Any]:
-    """Load configuration from YAML file"""
-    if not config_file.exists():
-        print(f"{Colors.RED}ERROR: Config file not found: {config_file}{Colors.NC}")
-        sys.exit(1)
+    """Load configuration from YAML file with secrets"""
+    # Load config with secrets (handles passwords from env/secrets file)
+    config = load_config_with_secrets(config_file)
 
-    try:
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
+    # Convert hosts list to dict for easier access
+    hosts_dict = {}
+    for host in config["hosts"]:
+        hosts_dict[host["number"]] = host
 
-        # Validate required sections
-        required_sections = ['network', 'common', 'hosts']
-        for section in required_sections:
-            if section not in config:
-                print(f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}")
-                sys.exit(1)
-
-        # Convert hosts list to dict for easier access
-        hosts_dict = {}
-        for host in config['hosts']:
-            hosts_dict[host['number']] = host
-
-        config['hosts_dict'] = hosts_dict
-        return config
-
-    except yaml.YAMLError as e:
-        print(f"{Colors.RED}ERROR: Failed to parse YAML config: {e}{Colors.NC}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
-        sys.exit(1)
+    config["hosts_dict"] = hosts_dict
+    return config
 
 
 class KickstartGenerator:
@@ -83,32 +63,29 @@ class KickstartGenerator:
 
     def get_template_vars(self, host_num: int) -> Dict[str, str]:
         """Get template variables for a specific host"""
-        host_config = self.config['hosts_dict'][host_num]
-        network = self.config['network']
-        common = self.config['common']
+        host_config = self.config["hosts_dict"][host_num]
+        network = self.config["network"]
+        common = self.config["common"]
 
         return {
             # Network settings
-            "vlan_id": network['vlan_id'],
+            "vlan_id": network["vlan_id"],
             "host_ip": host_config["ip"],
-            "netmask": network['netmask'],
-            "gateway": network['gateway'],
+            "netmask": network["netmask"],
+            "gateway": network["gateway"],
             "hostname": host_config["hostname"],
-            "dns_server": network['dns_server'],
-            "ntp_server": common['ntp_server'],
-            "vswitch_mtu": network['vswitch_mtu'],
-
+            "dns_server": network["dns_server"],
+            "ntp_server": common["ntp_server"],
+            "vswitch_mtu": network["vswitch_mtu"],
             # Host-specific settings
             "install_disk": host_config["install_disk"],
             "tiering_disk": host_config["tiering_disk"],
             "datastore_name": host_config["datastore_name"],
-
             # Security settings
-            "root_password": common['root_password'],
-            "ssh_key": common['ssh_root_key'],
-
+            "root_password": common["root_password"],
+            "ssh_key": common["ssh_root_key"],
             # Deployment settings
-            "host_count": len(self.config['hosts_dict']),
+            "host_count": len(self.config["hosts_dict"]),
         }
 
     def generate_kickstart(self, host_num: int, output_dir: Path) -> Path:
@@ -119,7 +96,9 @@ class KickstartGenerator:
 
         # Check if template exists
         if not self.template_file.exists():
-            print(f"{Colors.RED}ERROR: Template file not found: {self.template_file}{Colors.NC}")
+            print(
+                f"{Colors.RED}ERROR: Template file not found: {self.template_file}{Colors.NC}"
+            )
             sys.exit(1)
 
         # Get template variables
@@ -141,11 +120,11 @@ class KickstartGenerator:
 
     def generate_all(self, output_dir: Path) -> List[Path]:
         """Generate kickstart configs for all hosts"""
-        host_count = len(self.config['hosts_dict'])
+        host_count = len(self.config["hosts_dict"])
         print(f"Generating kickstart configs for {host_count} host(s)...\n")
 
         output_files = []
-        for host_num in sorted(self.config['hosts_dict'].keys()):
+        for host_num in sorted(self.config["hosts_dict"].keys()):
             output_files.append(self.generate_kickstart(host_num, output_dir))
             print()
 
@@ -163,27 +142,25 @@ Examples:
   %(prog)s all                      # Generate all configs
   %(prog)s 3 /tmp                   # Generate esx03 config to /tmp
   %(prog)s --config myconfig.yaml   # Use custom config file
-        """
+        """,
     )
 
     parser.add_argument(
         "host",
         nargs="?",
         default="all",
-        help="Host number (1, 2, 3) or 'all' (default: all)"
+        help="Host number (1, 2, 3) or 'all' (default: all)",
     )
 
     parser.add_argument(
-        "output_dir",
-        nargs="?",
-        type=Path,
-        help="Output directory (default: config/)"
+        "output_dir", nargs="?", type=Path, help="Output directory (default: config/)"
     )
 
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         type=Path,
-        help="Path to YAML config file (default: config/vcf-config.yaml)"
+        help="Path to YAML config file (default: config/vcf-config.yaml)",
     )
 
     args = parser.parse_args()
@@ -194,7 +171,9 @@ Examples:
     output_dir = args.output_dir if args.output_dir else project_dir / "config"
 
     # Determine config file
-    config_file = args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    config_file = (
+        args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    )
 
     # Load configuration
     config = load_config(config_file)
@@ -219,8 +198,8 @@ Examples:
         print(f"{Colors.GREEN}========================================{Colors.NC}\n")
 
         print(f"Generated files in {Colors.YELLOW}{output_dir}/{Colors.NC}:")
-        for host_num in sorted(config['hosts_dict'].keys()):
-            host = config['hosts_dict'][host_num]
+        for host_num in sorted(config["hosts_dict"].keys()):
+            host = config["hosts_dict"][host_num]
             print(f"  - ks-esx0{host_num}.cfg ({host['ip']}) - {host['hostname']}")
         print()
 
@@ -234,8 +213,10 @@ Examples:
         # Validate host number
         try:
             host_num = int(args.host)
-            if host_num not in config['hosts_dict']:
-                print(f"{Colors.RED}ERROR: Host {host_num} not found in config file{Colors.NC}")
+            if host_num not in config["hosts_dict"]:
+                print(
+                    f"{Colors.RED}ERROR: Host {host_num} not found in config file{Colors.NC}"
+                )
                 sys.exit(1)
         except ValueError:
             print(f"{Colors.RED}ERROR: Invalid host number: {args.host}{Colors.NC}")

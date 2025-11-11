@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -16,6 +16,11 @@ help: ## Display this help message
 	@echo "$(GREEN)VCF 9.x in a Box - Makefile Commands$(NC)"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "$(YELLOW)Usage:\n  $(BLUE)make$(NC) <target>\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-27s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+##@ Security
+
+check-secrets: sync ## Check secrets configuration and sources
+	@uv run scripts/check_secrets.py
 
 ##@ Python Setup
 
@@ -164,17 +169,24 @@ fix-vsan-policy-dryrun: sync ## Preview vSAN policy fix (dry run)
 test: sync ## Run tests (placeholder for future)
 	@echo "$(YELLOW)No tests configured yet$(NC)"
 
-lint: sync ## Lint Python code
+lint: sync ## Lint Python code with ruff
 	@echo "$(GREEN)Linting Python code...$(NC)"
-	@uv run python -m py_compile scripts/generate_kickstart.py
-	@uv run python -m py_compile scripts/create_esxi_usb.py
-	@uv run python -m py_compile scripts/deploy_vcf_installer.py
-	@uv run python -m py_compile scripts/setup_vcf_installer.py
-	@uv run python -m py_compile scripts/fix_vsan_esa_default_storage_policy.py
+	@uv run ruff check scripts/
 	@echo "$(GREEN)✓ Linting complete$(NC)"
 
-format: sync ## Format Python code (placeholder for future)
-	@echo "$(YELLOW)No formatter configured yet$(NC)"
+format: sync ## Format Python code with ruff
+	@echo "$(GREEN)Formatting Python code...$(NC)"
+	@uv run ruff format scripts/
+	@echo "$(GREEN)✓ Formatting complete$(NC)"
+
+format-imports: sync ## Organize imports and remove unused ones
+	@echo "$(GREEN)Organizing imports and removing unused...$(NC)"
+	@uv run ruff check --select I,F401 --fix scripts/
+	@echo "$(GREEN)✓ Imports organized$(NC)"
+
+check-imports: sync ## Check imports without modifying
+	@echo "$(GREEN)Checking imports...$(NC)"
+	@uv run ruff check --select I,F401 scripts/
 
 ##@ Quick Reference
 

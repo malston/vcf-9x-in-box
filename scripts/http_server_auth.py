@@ -10,12 +10,12 @@
 #   ./scripts/http_server_auth.py --bind 0.0.0.0 --user vcf --password vcf123! --port 8888 --directory /Users/markalston/Storage/Software
 #   ./scripts/http_server_auth.py --bind 0.0.0.0 --user vcf --password vcf123! --port 8888 --directory /Volumes/vcf-content/Software/depot
 
-from functools import partial
-from http.server import HTTPServer, SimpleHTTPRequestHandler, test
+import argparse
 import base64
 import os
 import ssl
-import argparse
+from functools import partial
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
 class AuthHTTPRequestHandler(SimpleHTTPRequestHandler):

@@ -1,0 +1,39 @@
+# Ruff configuration for vcf-9x-in-box project
+# See: https://docs.astral.sh/ruff/configuration/
+
+# Same as Black
+line-length = 100
+
+# Python 3.8+ (matches pyproject.toml)
+target-version = "py38"
+
+[lint]
+# Enable these rule sets
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (import sorting)
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+]
+
+# Never try to fix these (empty - allow all fixes)
+unfixable = []
+
+# Ignore specific rules
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[lint.per-file-ignores]
+# Allow unused imports in __init__.py files
+"__init__.py" = ["F401"]
+
+[lint.isort]
+# Import sorting configuration
+known-first-party = ["scripts"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]

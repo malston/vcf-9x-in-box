@@ -79,13 +79,15 @@ id_rsa.pub
 
 # Secrets and passwords (be careful with kickstart configs!)
 *password*
-*secret*
 credentials.json
 .env
 .env.local
 
+# VCF secrets file (contains actual passwords)
+config/vcf-secrets.yaml
+vcf-secrets.yaml
+
 # IDE/Editor directories
-.vscode/
 .idea/
 *.swp
 *.swo

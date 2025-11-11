@@ -37,7 +37,7 @@ vcf_installer:
   hostname: "sddcm01.vcf.lab"
   ip: "172.30.0.21"
 
-  # VCF Installer passwords (must be 12+ characters)
+  # VCF Installer passwords (must be 15+ characters per OVA requirements)
   root_password: "VMware1!VMware1!"
   admin_password: "VMware1!VMware1!"
 

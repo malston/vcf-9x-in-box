@@ -20,7 +20,7 @@
         "useExistingDeployment": true,
         "rootPassword": "VMware1!VMware1!",
         "sshPassword": "VMware1!VMware1!",
-        "localUserPassword": "VMware1!VMware1!"
+        "localUserPassword": "Cl0udFoundry!23"
     },
     "dnsSpec": {
         "nameservers": [

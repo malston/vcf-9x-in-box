@@ -428,6 +428,14 @@ class ReFindUSBCreator:
                 if line.startswith("prefix="):
                     # Update prefix to /esx9/
                     new_content.append("prefix=/esx9/")
+                elif line.startswith("kernel="):
+                    # Remove leading slash from kernel path
+                    parts = line.split("=", 1)
+                    if len(parts) == 2:
+                        kernel_path = parts[1].lstrip("/")
+                        new_content.append(f"kernel={kernel_path}")
+                    else:
+                        new_content.append(line)
                 elif line.startswith("modules="):
                     # Remove leading slashes from module names
                     # Split by --- and process each module
@@ -444,7 +452,7 @@ class ReFindUSBCreator:
 
             boot_cfg_path.write_text("\n".join(new_content) + "\n")
             print_message(
-                Colors.GREEN, "✓ BOOT.CFG modified (prefix=/esx9/, slashes removed)"
+                Colors.GREEN, "✓ BOOT.CFG modified (prefix=/esx9/, kernel/module slashes removed)"
             )
 
         except Exception as e:

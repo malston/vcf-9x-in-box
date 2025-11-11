@@ -9,27 +9,25 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 # Add scripts directory to path for vcf_secrets import
 sys.path.insert(0, str(Path(__file__).parent))
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: uv sync")
-    sys.exit(1)
-
+# pylint: disable=wrong-import-position
 from vcf_secrets import load_config_with_secrets
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
+    """ANSI color codes for terminal output"""
+
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
 
 def print_message(color: str, message: str):
@@ -47,7 +45,7 @@ class ESXiSSHKeySetup:
         self.private_key_path = self.ssh_dir / key_name
         self.public_key_path = self.ssh_dir / f"{key_name}.pub"
         self.ssh_config_path = self.ssh_dir / "config"
-        self.root_password = config['common']['root_password']
+        self.root_password = config["common"]["root_password"]
 
     def setup(self, dry_run: bool = False) -> bool:
         """Run complete SSH key setup"""
@@ -78,8 +76,8 @@ class ESXiSSHKeySetup:
         print_message(Colors.GREEN, "========================================\n")
 
         print_message(Colors.BLUE, "You can now SSH to hosts using:")
-        for host in self.config['hosts']:
-            hostname = host['hostname'].split('.')[0]  # Get short name (esx01)
+        for host in self.config["hosts"]:
+            hostname = host["hostname"].split(".")[0]  # Get short name (esx01)
             print(f"  ssh {hostname}")
         print()
 
@@ -90,12 +88,18 @@ class ESXiSSHKeySetup:
         print_message(Colors.YELLOW, "Step 1/3: Generating SSH key pair...")
 
         if self.private_key_path.exists() and self.public_key_path.exists():
-            print_message(Colors.GREEN, f"✓ SSH key already exists: {self.private_key_path}")
+            msg = f"✓ SSH key already exists: {self.private_key_path}"
+            print_message(Colors.GREEN, msg)
             return True
 
         if dry_run:
-            print_message(Colors.BLUE, f"[DRY RUN] Would generate SSH key: {self.private_key_path}")
-            print_message(Colors.BLUE, f"[DRY RUN] Command: ssh-keygen -t rsa -b 4096 -f {self.private_key_path} -N ''")
+            msg1 = f"[DRY RUN] Would generate SSH key: {self.private_key_path}"
+            print_message(Colors.BLUE, msg1)
+            msg2 = (
+                f"[DRY RUN] Command: ssh-keygen -t rsa -b 4096 "
+                f"-f {self.private_key_path} -N ''"
+            )
+            print_message(Colors.BLUE, msg2)
             return True
 
         # Create .ssh directory if it doesn't exist
@@ -106,17 +110,23 @@ class ESXiSSHKeySetup:
             subprocess.run(
                 [
                     "ssh-keygen",
-                    "-t", "rsa",
-                    "-b", "4096",
-                    "-f", str(self.private_key_path),
-                    "-N", "",  # No passphrase
-                    "-C", f"vcf-esxi-key"
+                    "-t",
+                    "rsa",
+                    "-b",
+                    "4096",
+                    "-f",
+                    str(self.private_key_path),
+                    "-N",
+                    "",  # No passphrase
+                    "-C",
+                    "vcf-esxi-key",
                 ],
                 check=True,
                 capture_output=True,
-                text=True
+                text=True,
             )
-            print_message(Colors.GREEN, f"✓ SSH key generated: {self.private_key_path}")
+            msg = f"✓ SSH key generated: {self.private_key_path}"
+            print_message(Colors.GREEN, msg)
             return True
 
         except subprocess.CalledProcessError as e:
@@ -133,7 +143,9 @@ class ESXiSSHKeySetup:
         config_entries = self._build_ssh_config_entries()
 
         if dry_run:
-            print_message(Colors.BLUE, f"[DRY RUN] Would update: {self.ssh_config_path}")
+            print_message(
+                Colors.BLUE, f"[DRY RUN] Would update: {self.ssh_config_path}"
+            )
             print_message(Colors.BLUE, "[DRY RUN] Entries to add:")
             print(config_entries)
             return True
@@ -152,8 +164,10 @@ class ESXiSSHKeySetup:
             start_idx = existing_config.find(marker_start)
             end_idx = existing_config.find(marker_end)
             if end_idx != -1:
-                end_idx = existing_config.find('\n', end_idx) + 1
-                existing_config = existing_config[:start_idx] + existing_config[end_idx:]
+                end_idx = existing_config.find("\n", end_idx) + 1
+                existing_config = (
+                    existing_config[:start_idx] + existing_config[end_idx:]
+                )
 
         # Add new entries
         new_config = existing_config.rstrip() + "\n\n" + config_entries
@@ -162,10 +176,11 @@ class ESXiSSHKeySetup:
         try:
             self.ssh_config_path.write_text(new_config)
             self.ssh_config_path.chmod(0o600)
-            print_message(Colors.GREEN, f"✓ SSH config updated: {self.ssh_config_path}")
+            msg = f"✓ SSH config updated: {self.ssh_config_path}"
+            print_message(Colors.GREEN, msg)
             return True
 
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             print_message(Colors.RED, f"ERROR: Failed to update SSH config: {e}")
             return False
 
@@ -175,17 +190,19 @@ class ESXiSSHKeySetup:
         entries.append("# Auto-generated by setup_esxi_ssh_keys.py")
         entries.append("")
 
-        for host in self.config['hosts']:
-            hostname = host['hostname'].split('.')[0]  # Get short name (esx01)
-            entries.extend([
-                f"Host {hostname}",
-                f"    HostName {host['ip']}",
-                f"    User root",
-                f"    IdentityFile {self.private_key_path}",
-                f"    StrictHostKeyChecking no",
-                f"    UserKnownHostsFile /dev/null",
-                ""
-            ])
+        for host in self.config["hosts"]:
+            hostname = host["hostname"].split(".")[0]  # Get short name (esx01)
+            entries.extend(
+                [
+                    f"Host {hostname}",
+                    f"    HostName {host['ip']}",
+                    "    User root",
+                    f"    IdentityFile {self.private_key_path}",
+                    "    StrictHostKeyChecking no",
+                    "    UserKnownHostsFile /dev/null",
+                    "",
+                ]
+            )
 
         entries.append("# END VCF ESXi Hosts")
         return "\n".join(entries)
@@ -199,58 +216,73 @@ class ESXiSSHKeySetup:
             if dry_run:
                 public_key = "ssh-rsa AAAAB3... (key would be generated)"
             else:
-                print_message(Colors.RED, f"ERROR: Public key not found: {self.public_key_path}")
+                print_message(
+                    Colors.RED, f"ERROR: Public key not found: {self.public_key_path}"
+                )
                 return False
         else:
             public_key = self.public_key_path.read_text().strip()
 
         all_success = True
-        for host in self.config['hosts']:
-            hostname = host['hostname'].split('.')[0]
-            ip = host['ip']
+        for host in self.config["hosts"]:
+            hostname = host["hostname"].split(".")[0]
+            ip = host["ip"]
 
             if dry_run:
-                print_message(Colors.BLUE, f"[DRY RUN] Would copy key to {hostname} ({ip})")
+                print_message(
+                    Colors.BLUE, f"[DRY RUN] Would copy key to {hostname} ({ip})"
+                )
                 continue
 
             print(f"  Copying key to {hostname} ({ip})...")
 
             try:
                 # Use sshpass to provide password, then copy key
-                # ESXi authorized_keys location: /etc/ssh/keys-root/authorized_keys
-
-                # Build command to add key if it doesn't already exist
-                # ESXi's /etc/ssh/keys-root directory already exists and permissions are managed by ESXi
+                # ESXi authorized_keys: /etc/ssh/keys-root/authorized_keys
+                # ESXi's directory already exists, permissions managed by ESXi
                 add_key_cmd = (
-                    f"grep -qF '{public_key}' /etc/ssh/keys-root/authorized_keys 2>/dev/null || "
-                    f"echo '{public_key}' >> /etc/ssh/keys-root/authorized_keys; "
+                    f"grep -qF '{public_key}' "
+                    f"/etc/ssh/keys-root/authorized_keys 2>/dev/null || "
+                    f"echo '{public_key}' >> "
+                    f"/etc/ssh/keys-root/authorized_keys; "
                     f"chmod 600 /etc/ssh/keys-root/authorized_keys 2>/dev/null"
                 )
 
-                result = subprocess.run(
+                subprocess.run(
                     [
-                        "sshpass", "-p", self.root_password,
+                        "sshpass",
+                        "-p",
+                        self.root_password,
                         "ssh",
-                        "-o", "StrictHostKeyChecking=no",
-                        "-o", "UserKnownHostsFile=/dev/null",
-                        "-o", "LogLevel=ERROR",
+                        "-o",
+                        "StrictHostKeyChecking=no",
+                        "-o",
+                        "UserKnownHostsFile=/dev/null",
+                        "-o",
+                        "LogLevel=ERROR",
                         f"root@{ip}",
-                        add_key_cmd
+                        add_key_cmd,
                     ],
                     check=True,
                     capture_output=True,
-                    text=True
+                    text=True,
                 )
 
                 print_message(Colors.GREEN, f"    ✓ Key copied to {hostname}")
 
             except subprocess.CalledProcessError as e:
-                print_message(Colors.RED, f"    ✗ Failed to copy key to {hostname}: {e}")
+                print_message(
+                    Colors.RED, f"    ✗ Failed to copy key to {hostname}: {e}"
+                )
                 if e.stderr:
                     print(f"      {e.stderr}")
                 all_success = False
             except FileNotFoundError:
-                print_message(Colors.RED, "    ✗ 'sshpass' command not found. Install with: brew install sshpass")
+                msg = (
+                    "    ✗ 'sshpass' command not found. "
+                    "Install with: brew install sshpass"
+                )
+                print_message(Colors.RED, msg)
                 all_success = False
                 break
 
@@ -258,6 +290,7 @@ class ESXiSSHKeySetup:
 
 
 def main():
+    """Main function to setup SSH keys for ESXi hosts"""
     parser = argparse.ArgumentParser(
         description="Setup SSH keys for ESXi hosts",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -281,25 +314,22 @@ After running, you can SSH to hosts using:
 Requirements:
   - sshpass must be installed: brew install sshpass
   - ESXi hosts must be accessible with root password
-        """
+        """,
     )
 
     parser.add_argument(
-        "-d", "--dry-run",
-        action="store_true",
-        help="Preview changes without executing"
+        "-d", "--dry-run", action="store_true", help="Preview changes without executing"
     )
 
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         type=Path,
-        help="Path to YAML config file (default: config/vcf-config.yaml)"
+        help="Path to YAML config file (default: config/vcf-config.yaml)",
     )
 
     parser.add_argument(
-        "-k", "--key-name",
-        default="vcf-esxi",
-        help="SSH key name (default: vcf-esxi)"
+        "-k", "--key-name", default="vcf-esxi", help="SSH key name (default: vcf-esxi)"
     )
 
     args = parser.parse_args()
@@ -309,7 +339,9 @@ Requirements:
     project_dir = script_dir.parent
 
     # Determine config file
-    config_file = args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    config_file = (
+        args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    )
 
     # Load configuration with secrets
     config = load_config_with_secrets(config_file)

@@ -14,17 +14,14 @@ from typing import Dict, Any, List
 # Add scripts directory to path for vcf_secrets import
 sys.path.insert(0, str(Path(__file__).parent))
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: uv sync")
-    sys.exit(1)
-
+# pylint: disable=wrong-import-position
 from vcf_secrets import load_config_with_secrets
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
+    """ANSI color codes for terminal output"""
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[1;33m"
@@ -287,6 +284,7 @@ class VCFInstallerDeployer:
 
 
 def main():
+    """Main function to deploy VCF Installer OVA to ESXi host"""
     parser = argparse.ArgumentParser(
         description="Deploy VCF Installer OVA to ESXi host",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -5,6 +5,7 @@ Purpose: Securely load passwords from environment variables, secrets file, or co
 Author: Auto-generated for VCF 9.x in a Box project
 """
 
+import getpass
 import os
 import sys
 from pathlib import Path
@@ -65,7 +66,6 @@ class SecretsManager:
 
         # Priority 4: Prompt user (if required)
         if required:
-            import getpass
             prompt = f"Enter {key.replace('_', ' ')}: "
             return getpass.getpass(prompt)
 
@@ -80,48 +80,56 @@ class SecretsManager:
             return None
 
         try:
-            with open(self.secrets_file, 'r') as f:
+            with open(self.secrets_file, 'r', encoding='utf-8') as f:
                 self._secrets_cache = yaml.safe_load(f)
             return self._secrets_cache
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
             print(f"WARNING: Failed to load secrets file: {e}")
             return None
 
     def get_esxi_root_password(self, config_value: Optional[str] = None) -> str:
         """Get ESXi root password"""
-        return self.get_secret(
+        password = self.get_secret(
             key="esxi_root_password",
             config_value=config_value,
             env_var="VCF_ESXI_ROOT_PASSWORD",
             required=True
         )
+        assert password is not None  # required=True guarantees non-None
+        return password
 
     def get_vcf_installer_root_password(self, config_value: Optional[str] = None) -> str:
         """Get VCF Installer root password"""
-        return self.get_secret(
+        password = self.get_secret(
             key="vcf_installer_root_password",
             config_value=config_value,
             env_var="VCF_INSTALLER_ROOT_PASSWORD",
             required=True
         )
+        assert password is not None  # required=True guarantees non-None
+        return password
 
     def get_vcf_installer_admin_password(self, config_value: Optional[str] = None) -> str:
         """Get VCF Installer admin password"""
-        return self.get_secret(
+        password = self.get_secret(
             key="vcf_installer_admin_password",
             config_value=config_value,
             env_var="VCF_INSTALLER_ADMIN_PASSWORD",
             required=True
         )
+        assert password is not None  # required=True guarantees non-None
+        return password
 
     def get_vcenter_password(self, config_value: Optional[str] = None) -> str:
         """Get vCenter password"""
-        return self.get_secret(
+        password = self.get_secret(
             key="vcenter_password",
             config_value=config_value,
             env_var="VCF_VCENTER_PASSWORD",
             required=True
         )
+        assert password is not None  # required=True guarantees non-None
+        return password
 
     def has_secrets_file(self) -> bool:
         """Check if secrets file exists"""
@@ -172,9 +180,9 @@ def load_config_with_secrets(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-    except Exception as e:
+    except (OSError, yaml.YAMLError) as e:
         print(f"ERROR: Failed to load config: {e}")
         sys.exit(1)
 

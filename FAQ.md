@@ -264,7 +264,7 @@ hosts:
 
 ```bash
 # Preview VCF Installer deployment
-make deploy-vcf-installer-dry-run
+make deploy-vcf-installer-dryrun
 
 # Preview VCF Installer configuration
 make setup-vcf-installer-dry-run

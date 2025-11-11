@@ -340,7 +340,7 @@ sudo make usb-create USB=/dev/disk4 HOST=1
 
 ```bash
 # Preview deployment
-make deploy-vcf-installer-dry-run
+make deploy-vcf-installer-dryrun
 
 # Deploy VCF Installer
 make deploy-vcf-installer
@@ -368,7 +368,7 @@ uv run scripts/deploy_vcf_installer.py
 
 ```bash
 # Preview configuration
-make setup-vcf-installer-dry-run
+make setup-vcf-installer-dryrun
 
 # Configure VCF Installer
 make setup-vcf-installer
@@ -396,7 +396,7 @@ uv run scripts/setup_vcf_installer.py
 
 ```bash
 # Preview policy fix
-make fix-vsan-policy-dry-run
+make fix-vsan-policy-dryrun
 
 # Fix vSAN storage policy (2-node only)
 make fix-vsan-policy
@@ -581,7 +581,7 @@ EOF
 
    ```bash
    # Preview deployment first (recommended)
-   make deploy-vcf-installer-dry-run
+   make deploy-vcf-installer-dryrun
 
    # Deploy VCF Installer
    make deploy-vcf-installer
@@ -600,7 +600,7 @@ EOF
 
    ```bash
    # Preview configuration first (recommended)
-   make setup-vcf-installer-dry-run
+   make setup-vcf-installer-dryrun
 
    # Configure VCF Installer
    make setup-vcf-installer
@@ -660,7 +660,7 @@ Once you have fixed and/or acknowledge all applicable pre-check, click on `DEPLO
 
    ```bash
    # Preview what the script will do (recommended)
-   make fix-vsan-policy-dry-run
+   make fix-vsan-policy-dryrun
 
    # Fix the storage policy
    make fix-vsan-policy

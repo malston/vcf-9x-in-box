@@ -142,11 +142,11 @@ Added new targets with dry-run support:
 ```makefile
 # VCF Deployment targets
 make deploy-vcf-installer              # Deploy VCF Installer
-make deploy-vcf-installer-dry-run      # Preview deployment
+make deploy-vcf-installer-dryrun      # Preview deployment
 make setup-vcf-installer               # Configure VCF Installer
-make setup-vcf-installer-dry-run       # Preview configuration
+make setup-vcf-installer-dryrun       # Preview configuration
 make fix-vsan-policy                   # Fix vSAN policy (2-node)
-make fix-vsan-policy-dry-run           # Preview policy fix
+make fix-vsan-policy-dryrun           # Preview policy fix
 
 # Updated lint target
 make lint                              # Lint all Python scripts
@@ -378,15 +378,15 @@ make config-diff       # Show differences from last deployment
 make sync
 
 # 2. Deploy VCF Installer (preview first)
-make deploy-vcf-installer-dry-run
+make deploy-vcf-installer-dryrun
 make deploy-vcf-installer
 
 # 3. Configure VCF Installer (preview first)
-make setup-vcf-installer-dry-run
+make setup-vcf-installer-dryrun
 make setup-vcf-installer
 
 # 4. Fix vSAN policy if 2-node (preview first)
-make fix-vsan-policy-dry-run
+make fix-vsan-policy-dryrun
 make fix-vsan-policy
 ```
 

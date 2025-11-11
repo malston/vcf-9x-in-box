@@ -5,6 +5,7 @@ This document explains how to securely manage passwords and sensitive informatio
 ## Security Problem
 
 By default, `config/vcf-config.yaml` contains all configuration including passwords in plain text. This is:
+
 - ❌ **Insecure** - passwords visible in git repository
 - ❌ **Dangerous** - accidental commits expose credentials
 - ❌ **Non-compliant** - violates security best practices
@@ -287,28 +288,33 @@ unset VCF_ESXI_ROOT_PASSWORD
 ### Migrating from Plaintext Config
 
 1. **Create secrets file:**
+
    ```bash
    cp config/vcf-secrets.yaml.example config/vcf-secrets.yaml
    ```
 
 2. **Copy passwords from config:**
+
    ```bash
    vim config/vcf-secrets.yaml
    # Copy passwords from vcf-config.yaml
    ```
 
 3. **Replace passwords in config with placeholders:**
+
    ```yaml
    common:
      root_password: "PLACEHOLDER"
    ```
 
 4. **Test:**
+
    ```bash
-   make deploy-vcf-installer-dry-run
+   make deploy-vcf-installer-dryrun
    ```
 
 5. **Verify secrets file is gitignored:**
+
    ```bash
    git status
    # vcf-secrets.yaml should NOT appear

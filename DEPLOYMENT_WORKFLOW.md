@@ -574,7 +574,7 @@ vcf_installer:
   vm_network: "VM Network"
 
 # Preview deployment (recommended)
-make deploy-vcf-installer-dry-run
+make deploy-vcf-installer-dryrun
 
 # Run deployment
 make deploy-vcf-installer
@@ -662,7 +662,7 @@ vcf_installer:
     use_https: false
 
 # Preview configuration (recommended)
-make setup-vcf-installer-dry-run
+make setup-vcf-installer-dryrun
 
 # Run configuration
 make setup-vcf-installer
@@ -1048,12 +1048,12 @@ ssh root@172.30.0.13 "vmware -v"
 # 5. Deploy VCF Installer
 make deploy-vcf-installer
 # Or with dry-run first:
-# make deploy-vcf-installer-dry-run
+# make deploy-vcf-installer-dryrun
 
 # 6. Configure VCF Installer
 make setup-vcf-installer
 # Or with dry-run first:
-# make setup-vcf-installer-dry-run
+# make setup-vcf-installer-dryrun
 
 # 7. Deploy VCF (via UI)
 # - Login to https://sddcm01.vcf.lab
@@ -1066,7 +1066,7 @@ make setup-vcf-installer
 # If using vcf90-two-node.json, run immediately after starting deployment:
 make fix-vsan-policy
 # Or with dry-run first:
-# make fix-vsan-policy-dry-run
+# make fix-vsan-policy-dryrun
 
 # 9. Monitor deployment (3-4 hours)
 ssh root@172.30.0.21

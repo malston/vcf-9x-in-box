@@ -69,7 +69,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 ## Frequently Asked Questions (FAQ)
 
-**❓ NEW:** Common questions and answers about VCF 9.x in a Box deployment. See **[FAQ.md](FAQ.md)**.
+**❓ NEW:** Common questions and answers about VCF 9.x in a Box deployment. See **[FAQ.md](docs/FAQ.md)**.
 
 **Popular topics:**
 
@@ -83,7 +83,7 @@ See the full FAQ for detailed answers and many more questions.
 
 ## Deployment Workflow Guide
 
-**📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)**.
+**📖 NEW:** For a comprehensive understanding of how all the scripts work together, see **[DEPLOYMENT_WORKFLOW.md](docs/DEPLOYMENT_WORKFLOW.md)**.
 
 This guide provides:
 
@@ -182,7 +182,7 @@ hosts:
 make generate CONFIG=config/my-custom-config.yaml
 ```
 
-See [PYTHON_SETUP.md](PYTHON_SETUP.md) for detailed Python environment information.
+See [PYTHON_SETUP.md](docs/PYTHON_SETUP.md) for detailed Python environment information.
 
 ## Quick Start
 

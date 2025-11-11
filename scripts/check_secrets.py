@@ -49,7 +49,7 @@ def main():
     print(secrets_mgr.get_secrets_info())
 
     print("\n" + "=" * 60)
-    print("\nFor more information, see: SECRETS_MANAGEMENT.md\n")
+    print("\nFor more information, see: docs/SECRETS_MANAGEMENT.md\n")
 
 
 if __name__ == "__main__":

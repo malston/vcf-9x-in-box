@@ -554,7 +554,7 @@ network:
 
 ## Additional Resources
 
-- **Main README:** [README.md](README.md)
+- **Main README:** [README.md](../README.md)
 - **Deployment Workflow:** [DEPLOYMENT_WORKFLOW.md](DEPLOYMENT_WORKFLOW.md)
 - **Python Setup:** [PYTHON_SETUP.md](PYTHON_SETUP.md)
 - **Standardization Guide:** [PYTHON_STANDARDIZATION.md](PYTHON_STANDARDIZATION.md)

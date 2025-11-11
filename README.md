@@ -11,6 +11,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * [Changelog](#changelog)
 * [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
 * [Deployment Workflow Guide](#deployment-workflow-guide)
+* [Secrets Management](#secrets-management)
 * [Using the Makefile](#using-the-makefile)
 * [Quick Start](#quick-start)
 * [Minimum Resources](#minimum-resources)
@@ -25,6 +26,21 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * [Blog References](#blog-references)
 
 ## Changelog
+
+* **11/11/25**
+  * **Secrets Management:** Implemented secure password handling system
+    * Created `vcf_secrets.py` module for centralized secrets management
+    * All scripts now load passwords from env vars → secrets file → config → prompt
+    * Added `config/vcf-secrets.yaml.example` template
+    * Added `make check-secrets` command to verify secrets configuration
+    * Prevents accidental password commits with gitignored secrets file
+  * **Code Quality:** Added ruff for linting and formatting
+    * Organized and cleaned all Python imports
+    * Added VS Code configuration for consistent developer experience
+    * Added mypy type stubs for PyYAML and pyvmomi
+  * **Documentation:** Organized all docs under `docs/` folder
+    * Moved FAQ, deployment workflow, and other guides to docs/
+    * Added comprehensive secrets management documentation
 
 * **10/20/25**
   * Updated VCF Installer configuration script to include VCF 9.0.1 enhancements
@@ -95,6 +111,38 @@ This guide provides:
 * Troubleshooting guidance
 
 **Perfect for:** Understanding the complete deployment process and how each piece fits together.
+
+## Secrets Management
+
+**🔒 IMPORTANT:** This project uses secure secrets management to keep passwords out of configuration files. See **[SECRETS_MANAGEMENT.md](docs/SECRETS_MANAGEMENT.md)** for complete details.
+
+**Key features:**
+
+* **Multiple sources:** Environment variables → secrets file → config → prompt
+* **gitignored secrets file:** `config/vcf-secrets.yaml` is never committed
+* **Centralized management:** One `vcf_secrets.py` module used by all scripts
+* **Flexible deployment:** Works with CI/CD, local dev, and manual workflows
+
+**Quick start:**
+
+```bash
+# Check your secrets configuration
+make check-secrets
+
+# Option 1: Use environment variables
+export VCF_ESXI_ROOT_PASSWORD="VMware1!"
+export VCF_INSTALLER_ROOT_PASSWORD="VMware1!VMware1!"
+export VCF_INSTALLER_ADMIN_PASSWORD="VMware1!VMware1!"
+export VCF_VCENTER_PASSWORD="VMware1!VMware1!"
+
+# Option 2: Create secrets file (recommended)
+cp config/vcf-secrets.yaml.example config/vcf-secrets.yaml
+# Edit config/vcf-secrets.yaml with your actual passwords
+
+# Option 3: Scripts will prompt you interactively if needed
+```
+
+**Why this matters:** Keeps passwords secure and prevents accidental commits of sensitive data.
 
 ## Using the Makefile
 

@@ -11,11 +11,16 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List
 
+# Add scripts directory to path for vcf_secrets import
+sys.path.insert(0, str(Path(__file__).parent))
+
 try:
     import yaml
 except ImportError:
     print("ERROR: pyyaml module not found. Install with: uv sync")
     sys.exit(1)
+
+from vcf_secrets import load_config_with_secrets
 
 
 # Color output
@@ -25,38 +30,6 @@ class Colors:
     YELLOW = "\033[1;33m"
     BLUE = "\033[0;34m"
     NC = "\033[0m"  # No Color
-
-
-def load_config(config_file: Path) -> Dict[str, Any]:
-    """Load configuration from YAML file"""
-    if not config_file.exists():
-        print(f"{Colors.RED}ERROR: Config file not found: {config_file}{Colors.NC}")
-        sys.exit(1)
-
-    try:
-        with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-
-        # Validate required sections
-        required_sections = ["network", "common", "hosts", "vcf_installer"]
-        for section in required_sections:
-            if section not in config:
-                print(
-                    f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}"
-                )
-                sys.exit(1)
-
-        # Validate required keys in each section
-        validate_config_keys(config)
-
-        return config
-
-    except yaml.YAMLError as e:
-        print(f"{Colors.RED}ERROR: Failed to parse YAML config: {e}{Colors.NC}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
-        sys.exit(1)
 
 
 def validate_config_keys(config: Dict[str, Any]) -> None:
@@ -355,8 +328,11 @@ Requirements:
         args.config if args.config else project_dir / "config" / "vcf-config.yaml"
     )
 
-    # Load configuration
-    config = load_config(config_file)
+    # Load configuration with secrets
+    config = load_config_with_secrets(config_file)
+
+    # Validate configuration structure
+    validate_config_keys(config)
 
     # Print header
     print(f"{Colors.GREEN}========================================{Colors.NC}")

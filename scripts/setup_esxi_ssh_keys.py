@@ -241,32 +241,28 @@ class ESXiSSHKeySetup:
                 # Use sshpass to provide password, then copy key
                 # ESXi authorized_keys location: /etc/ssh/keys-root/authorized_keys
 
-                # First, ensure the directory exists and copy the key
-                commands = [
-                    # Ensure directory exists
-                    "mkdir -p /etc/ssh/keys-root",
-                    # Add key to authorized_keys (append if exists)
-                    f"echo '{public_key}' >> /etc/ssh/keys-root/authorized_keys",
-                    # Set proper permissions
-                    "chmod 600 /etc/ssh/keys-root/authorized_keys",
-                    "chmod 700 /etc/ssh/keys-root",
-                ]
+                # Build command to add key if it doesn't already exist
+                # ESXi's /etc/ssh/keys-root directory already exists and permissions are managed by ESXi
+                add_key_cmd = (
+                    f"grep -qF '{public_key}' /etc/ssh/keys-root/authorized_keys 2>/dev/null || "
+                    f"echo '{public_key}' >> /etc/ssh/keys-root/authorized_keys; "
+                    f"chmod 600 /etc/ssh/keys-root/authorized_keys 2>/dev/null"
+                )
 
-                for cmd in commands:
-                    result = subprocess.run(
-                        [
-                            "sshpass", "-p", self.root_password,
-                            "ssh",
-                            "-o", "StrictHostKeyChecking=no",
-                            "-o", "UserKnownHostsFile=/dev/null",
-                            "-o", "LogLevel=ERROR",
-                            f"root@{ip}",
-                            cmd
-                        ],
-                        check=True,
-                        capture_output=True,
-                        text=True
-                    )
+                result = subprocess.run(
+                    [
+                        "sshpass", "-p", self.root_password,
+                        "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "UserKnownHostsFile=/dev/null",
+                        "-o", "LogLevel=ERROR",
+                        f"root@{ip}",
+                        add_key_cmd
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
 
                 print_message(Colors.GREEN, f"    ✓ Key copied to {hostname}")
 

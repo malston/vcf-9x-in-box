@@ -14,17 +14,16 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: pip install pyyaml")
-    sys.exit(1)
+import yaml
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
+    """ANSI color codes for terminal output"""
+
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[1;33m"

@@ -88,7 +88,6 @@ config/vcf-secrets.yaml
 vcf-secrets.yaml
 
 # IDE/Editor directories
-.vscode/
 .idea/
 *.swp
 *.swo

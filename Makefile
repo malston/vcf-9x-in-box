@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -169,17 +169,24 @@ fix-vsan-policy-dryrun: sync ## Preview vSAN policy fix (dry run)
 test: sync ## Run tests (placeholder for future)
 	@echo "$(YELLOW)No tests configured yet$(NC)"
 
-lint: sync ## Lint Python code
+lint: sync ## Lint Python code with ruff
 	@echo "$(GREEN)Linting Python code...$(NC)"
-	@uv run python -m py_compile scripts/generate_kickstart.py
-	@uv run python -m py_compile scripts/create_esxi_usb.py
-	@uv run python -m py_compile scripts/deploy_vcf_installer.py
-	@uv run python -m py_compile scripts/setup_vcf_installer.py
-	@uv run python -m py_compile scripts/fix_vsan_esa_default_storage_policy.py
+	@uv run ruff check scripts/
 	@echo "$(GREEN)✓ Linting complete$(NC)"
 
-format: sync ## Format Python code (placeholder for future)
-	@echo "$(YELLOW)No formatter configured yet$(NC)"
+format: sync ## Format Python code with ruff
+	@echo "$(GREEN)Formatting Python code...$(NC)"
+	@uv run ruff format scripts/
+	@echo "$(GREEN)✓ Formatting complete$(NC)"
+
+format-imports: sync ## Organize imports and remove unused ones
+	@echo "$(GREEN)Organizing imports and removing unused...$(NC)"
+	@uv run ruff check --select I,F401 --fix scripts/
+	@echo "$(GREEN)✓ Imports organized$(NC)"
+
+check-imports: sync ## Check imports without modifying
+	@echo "$(GREEN)Checking imports...$(NC)"
+	@uv run ruff check --select I,F401 scripts/
 
 ##@ Quick Reference
 

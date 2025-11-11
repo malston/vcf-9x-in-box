@@ -9,13 +9,9 @@ import getpass
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: uv sync")
-    sys.exit(1)
+import yaml
 
 
 class SecretsManager:
@@ -31,7 +27,7 @@ class SecretsManager:
         key: str,
         config_value: Optional[str] = None,
         env_var: Optional[str] = None,
-        required: bool = True
+        required: bool = True,
     ) -> Optional[str]:
         """
         Get secret value with priority order:
@@ -80,7 +76,7 @@ class SecretsManager:
             return None
 
         try:
-            with open(self.secrets_file, 'r', encoding='utf-8') as f:
+            with open(self.secrets_file, "r", encoding="utf-8") as f:
                 self._secrets_cache = yaml.safe_load(f)
             return self._secrets_cache
         except (OSError, yaml.YAMLError) as e:
@@ -93,29 +89,33 @@ class SecretsManager:
             key="esxi_root_password",
             config_value=config_value,
             env_var="VCF_ESXI_ROOT_PASSWORD",
-            required=True
+            required=True,
         )
         assert password is not None  # required=True guarantees non-None
         return password
 
-    def get_vcf_installer_root_password(self, config_value: Optional[str] = None) -> str:
+    def get_vcf_installer_root_password(
+        self, config_value: Optional[str] = None
+    ) -> str:
         """Get VCF Installer root password"""
         password = self.get_secret(
             key="vcf_installer_root_password",
             config_value=config_value,
             env_var="VCF_INSTALLER_ROOT_PASSWORD",
-            required=True
+            required=True,
         )
         assert password is not None  # required=True guarantees non-None
         return password
 
-    def get_vcf_installer_admin_password(self, config_value: Optional[str] = None) -> str:
+    def get_vcf_installer_admin_password(
+        self, config_value: Optional[str] = None
+    ) -> str:
         """Get VCF Installer admin password"""
         password = self.get_secret(
             key="vcf_installer_admin_password",
             config_value=config_value,
             env_var="VCF_INSTALLER_ADMIN_PASSWORD",
-            required=True
+            required=True,
         )
         assert password is not None  # required=True guarantees non-None
         return password
@@ -126,7 +126,7 @@ class SecretsManager:
             key="vcenter_password",
             config_value=config_value,
             env_var="VCF_VCENTER_PASSWORD",
-            required=True
+            required=True,
         )
         assert password is not None  # required=True guarantees non-None
         return password
@@ -157,7 +157,7 @@ class SecretsManager:
             "VCF_ESXI_ROOT_PASSWORD",
             "VCF_INSTALLER_ROOT_PASSWORD",
             "VCF_INSTALLER_ADMIN_PASSWORD",
-            "VCF_VCENTER_PASSWORD"
+            "VCF_VCENTER_PASSWORD",
         ]
         for var in env_vars:
             if os.environ.get(var):
@@ -180,7 +180,7 @@ def load_config_with_secrets(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, 'r', encoding='utf-8') as f:
+        with open(config_file, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
     except (OSError, yaml.YAMLError) as e:
         print(f"ERROR: Failed to load config: {e}")
@@ -191,22 +191,26 @@ def load_config_with_secrets(config_file: Path) -> Dict[str, Any]:
     secrets_mgr = SecretsManager(project_dir)
 
     # Replace passwords with secure values
-    if 'common' in config:
-        config['common']['root_password'] = secrets_mgr.get_esxi_root_password(
-            config['common'].get('root_password')
+    if "common" in config:
+        config["common"]["root_password"] = secrets_mgr.get_esxi_root_password(
+            config["common"].get("root_password")
         )
 
-    if 'vcf_installer' in config:
-        config['vcf_installer']['root_password'] = secrets_mgr.get_vcf_installer_root_password(
-            config['vcf_installer'].get('root_password')
+    if "vcf_installer" in config:
+        config["vcf_installer"]["root_password"] = (
+            secrets_mgr.get_vcf_installer_root_password(
+                config["vcf_installer"].get("root_password")
+            )
         )
-        config['vcf_installer']['admin_password'] = secrets_mgr.get_vcf_installer_admin_password(
-            config['vcf_installer'].get('admin_password')
+        config["vcf_installer"]["admin_password"] = (
+            secrets_mgr.get_vcf_installer_admin_password(
+                config["vcf_installer"].get("admin_password")
+            )
         )
 
-    if 'vcenter' in config:
-        config['vcenter']['password'] = secrets_mgr.get_vcenter_password(
-            config['vcenter'].get('password')
+    if "vcenter" in config:
+        config["vcenter"]["password"] = secrets_mgr.get_vcenter_password(
+            config["vcenter"].get("password")
         )
 
     return config

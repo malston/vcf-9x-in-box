@@ -9,7 +9,7 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Add scripts directory to path for vcf_secrets import
 sys.path.insert(0, str(Path(__file__).parent))
@@ -22,6 +22,7 @@ from vcf_secrets import load_config_with_secrets
 # pylint: disable=too-few-public-methods
 class Colors:
     """ANSI color codes for terminal output"""
+
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[1;33m"

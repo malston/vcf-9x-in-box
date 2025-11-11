@@ -9,36 +9,23 @@ import argparse
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional
-import tempfile
+from typing import Any, Dict, Optional
+
+import requests
 import urllib3
-
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml module not found. Install with: uv sync")
-    sys.exit(1)
-
-try:
-    import requests
-except ImportError:
-    print("ERROR: requests module not found. Install with: uv sync")
-    sys.exit(1)
-
-try:
-    from pyVim.connect import SmartConnect, Disconnect
-    from pyVim.task import WaitForTask
-    from pyVmomi import vim
-except ImportError:
-    print("ERROR: pyvmomi module not found. Install with: uv sync")
-    sys.exit(1)
+import yaml
+from pyVim.connect import Disconnect, SmartConnect
+from pyVmomi import vim
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 # Color output
+# pylint: disable=too-few-public-methods
 class Colors:
+    """ANSI color codes for terminal output"""
+
     RED = '\033[0;31m'
     GREEN = '\033[0;32m'
     YELLOW = '\033[1;33m'
@@ -53,7 +40,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
         # Validate required sections
@@ -68,7 +55,7 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     except yaml.YAMLError as e:
         print(f"{Colors.RED}ERROR: Failed to parse YAML config: {e}{Colors.NC}")
         sys.exit(1)
-    except Exception as e:
+    except (IOError, OSError) as e:
         print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
         sys.exit(1)
 
@@ -111,7 +98,7 @@ class VCFInstallerConfigurator:
             print(f"{Colors.GREEN}✓ Connected to ESXi host{Colors.NC}\n")
             return True
 
-        except Exception as e:
+        except (vim.fault.VimFault, IOError, OSError) as e:
             print(f"{Colors.RED}ERROR: Failed to connect to ESXi: {e}{Colors.NC}")
             return False
 
@@ -131,7 +118,7 @@ class VCFInstallerConfigurator:
                 if response.status_code == 200:
                     print(f"{Colors.GREEN}✓ VCF Installer UI is ready!{Colors.NC}\n")
                     return True
-            except Exception:
+            except (requests.RequestException, OSError):
                 pass
 
             print(f"{Colors.YELLOW}⏳ VCF Installer UI not ready yet. "
@@ -165,7 +152,7 @@ class VCFInstallerConfigurator:
             print(f"{Colors.RED}ERROR: VM not found: {self.vcf_installer['vm_name']}{Colors.NC}")
             return False
 
-        except Exception as e:
+        except (vim.fault.VimFault, AttributeError) as e:
             print(f"{Colors.RED}ERROR: Failed to find VM: {e}{Colors.NC}")
             return False
 
@@ -243,7 +230,7 @@ class VCFInstallerConfigurator:
             )
 
             # Upload the script
-            response = requests.put(url, data=script_content, verify=False)
+            response = requests.put(url, data=script_content, verify=False, timeout=30)
             if response.status_code not in [200, 201]:
                 print(f"{Colors.RED}ERROR: Failed to upload script (HTTP {response.status_code}){Colors.NC}")
                 return False
@@ -297,7 +284,7 @@ class VCFInstallerConfigurator:
             print(f"{Colors.YELLOW}⚠ Script still running after {max_wait}s, continuing...{Colors.NC}\n")
             return True
 
-        except Exception as e:
+        except (vim.fault.VimFault, requests.RequestException, IOError) as e:
             print(f"{Colors.RED}ERROR: Failed to execute guest script: {e}{Colors.NC}")
             return False
 
@@ -307,7 +294,7 @@ class VCFInstallerConfigurator:
             try:
                 Disconnect(self.si)
                 print(f"{Colors.GREEN}✓ Disconnected from ESXi host{Colors.NC}\n")
-            except Exception:
+            except (vim.fault.VimFault, IOError):
                 pass
 
     def configure(self, dry_run: bool = False) -> bool:
@@ -355,15 +342,39 @@ class VCFInstallerConfigurator:
 
             print(f"{Colors.BLUE}Next Steps:{Colors.NC}")
             print(f"  1. Access VCF Installer UI: https://{self.vcf_installer['hostname']}/")
-            print(f"  2. Connect to offline depot (if using offline depot)")
-            print(f"  3. Upload VCF deployment manifest JSON")
-            print(f"  4. Start VCF deployment")
+            print("  2. Connect to offline depot (if using offline depot)")
+            print("  3. Upload VCF deployment manifest JSON")
+            print("  4. Start VCF deployment")
             print()
 
         return success
 
 
 def main():
+    """
+    Configure VCF Installer VM post-deployment.
+
+    This function serves as the main entry point for the VCF Installer configuration tool.
+    It parses command-line arguments, loads configuration from a YAML file, and executes
+    the configuration process on the VCF Installer VM.
+
+    Command-line Arguments:
+        -d, --dry-run: Preview configuration changes without executing them
+        -c, --config: Path to custom YAML configuration file
+                      (default: config/vcf-config.yaml)
+
+    Configuration:
+        The function loads configuration from a YAML file that should contain:
+        - VCF Installer VM details (name, credentials)
+        - ESXi host connection information
+        - Network and storage settings
+
+    Returns:
+        None (exits with status code 0 on success, 1 on failure)
+
+    Raises:
+        SystemExit: Always exits with appropriate status code
+    """
     parser = argparse.ArgumentParser(
         description="Configure VCF Installer post-deployment",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -1,0 +1,51 @@
+{
+  // Python Language Server
+  "python.languageServer": "Pylance",
+
+  // Ruff Configuration
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // Ruff Settings
+  "ruff.enable": true,
+  "ruff.lint.enable": true,
+  "ruff.format.enable": true,
+  "ruff.organizeImports": true,
+
+  // Enable import sorting
+  "ruff.lint.select": [
+    "E",    // pycodestyle errors
+    "W",    // pycodestyle warnings
+    "F",    // pyflakes
+    "I",    // isort (import sorting)
+    "N",    // pep8-naming
+    "UP",   // pyupgrade
+    "B",    // flake8-bugbear
+    "C4",   // flake8-comprehensions
+    "SIM"   // flake8-simplify
+  ],
+
+  // Python path (uses uv managed virtual environment)
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // File associations
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.j2": "jinja"
+  },
+
+  // Exclude files from file watcher
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/build/**": true,
+    "**/dist/**": true,
+    "**/__pycache__/**": true,
+    "**/*.pyc": true
+  }
+}

@@ -284,7 +284,7 @@ sudo uv run scripts/create_refind_usb.py /dev/disk4
 
 **What The USB Contains After Creation:**
 
-```
+```sh
 /Volumes/VCF/
 ├── kickstart/
 │   ├── KS-ESX01.CFG         # Host 1 kickstart config
@@ -337,7 +337,7 @@ Creates a bootable USB for a **specific host**. Each USB has one kickstart confi
 
 **How It Works:**
 
-```
+```text
 Input:
   - ESXi ISO: VMware-VMvisor-Installer-9.0.0.0.24755229.x86_64.iso
   - Kickstart: config/ks-esx01.cfg (for host 1)
@@ -383,7 +383,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 **What The USB Contains After Creation:**
 
-```
+```sh
 /Volumes/ESXI/
 ├── KS.CFG                    # Your kickstart config (ks-esx01.cfg)
 ├── EFI/
@@ -443,7 +443,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 #### 4.1 Initial ESXi Installation (Reboot 1)
 
-```
+```text
 1. Boot from USB
 2. ESXi installer reads KS.CFG from USB
 3. Installs ESXi to specified NVMe disk
@@ -455,7 +455,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 #### 4.2 Firstboot Configuration (Reboot 2)
 
-```
+```text
 8. ESXi boots for first time
 9. Runs %firstboot section from kickstart
 10. Configures:
@@ -471,7 +471,7 @@ sudo uv run scripts/create_esxi_usb.py /dev/disk4 1
 
 #### 4.3 Final State
 
-```
+```text
 12. ESXi fully configured and running
 13. Accessible via:
     - https://172.30.0.11 (or .12, .13)
@@ -692,7 +692,7 @@ uv run scripts/setup_vcf_installer.py
 
 #### 7.1 Connect to Offline Depot (via UI)
 
-```
+```text
 1. Login to https://sddcm01.vcf.lab
    - Username: admin@local
    - Password: VMware1!VMware1!
@@ -716,7 +716,7 @@ uv run scripts/setup_vcf_installer.py
 
 #### 7.2 Upload VCF Deployment Manifest
 
-```
+```text
 6. Return to VCF Installer homepage
 
 7. Click "DEPLOY USING JSON SPEC"
@@ -767,7 +767,7 @@ uv run scripts/setup_vcf_installer.py
 
 #### 7.3 VCF Deployment Process (3-4 hours)
 
-```
+```text
 Deployment Phases:
 
 Phase 1: Validation
@@ -818,7 +818,7 @@ Phase 7: Finalization
 
 #### 7.4 Two-Node Specific: Storage Policy Fix
 
-```
+```text
 IF using vcf90-two-node.json:
 
   IMMEDIATELY after clicking "DEPLOY", run:
@@ -843,7 +843,7 @@ IF using vcf90-three-node.json:
 
 #### 7.5 Monitoring Deployment
 
-```
+```text
 Monitor progress via VCF Installer UI:
   - Shows current phase
   - Shows task progress
@@ -861,7 +861,7 @@ SSH to VCF Installer for detailed logs:
 
 ### Configuration Flow
 
-```
+```sh
 config/vcf-config.yaml                    # Source of truth
     ↓
 scripts/generate_kickstart.py             # Reads YAML, generates configs

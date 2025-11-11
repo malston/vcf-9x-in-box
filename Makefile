@@ -119,6 +119,17 @@ refind-usb-dryrun: ## Preview rEFInd USB creation (dry run)
 	@echo "$(YELLOW)Dry run: rEFInd USB creation$(NC)"
 	@uv run scripts/create_refind_usb.py --dry-run $(USB) $(if $(CONFIG),--config $(CONFIG),)
 
+##@ ESXi Configuration
+
+setup-ssh-keys: sync ## Setup SSH keys for ESXi hosts (password-less SSH)
+	@echo "$(GREEN)Setting up SSH keys for ESXi hosts...$(NC)"
+	@uv run scripts/setup_esxi_ssh_keys.py $(if $(CONFIG),--config $(CONFIG),) $(if $(KEY),--key-name $(KEY),)
+	@echo "$(GREEN)✓ SSH keys configured$(NC)"
+
+setup-ssh-keys-dryrun: sync ## Preview SSH key setup (dry run)
+	@echo "$(YELLOW)Dry run: SSH key setup$(NC)"
+	@uv run scripts/setup_esxi_ssh_keys.py --dry-run $(if $(CONFIG),--config $(CONFIG),) $(if $(KEY),--key-name $(KEY),)
+
 ##@ VCF Deployment
 
 deploy-vcf-installer: sync ## Deploy VCF Installer OVA to ESXi host

@@ -17,6 +17,11 @@ help: ## Display this help message
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "$(YELLOW)Usage:\n  $(BLUE)make$(NC) <target>\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-27s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+##@ Security
+
+check-secrets: sync ## Check secrets configuration and sources
+	@uv run scripts/check_secrets.py
+
 ##@ Python Setup
 
 setup: ## Install uv (if not already installed)

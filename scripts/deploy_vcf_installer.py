@@ -20,11 +20,11 @@ except ImportError:
 
 # Color output
 class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
 
 def load_config(config_file: Path) -> Dict[str, Any]:
@@ -34,14 +34,16 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             config = yaml.safe_load(f)
 
         # Validate required sections
-        required_sections = ['network', 'common', 'hosts', 'vcf_installer']
+        required_sections = ["network", "common", "hosts", "vcf_installer"]
         for section in required_sections:
             if section not in config:
-                print(f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}")
+                print(
+                    f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}"
+                )
                 sys.exit(1)
 
         # Validate required keys in each section
@@ -62,32 +64,38 @@ def validate_config_keys(config: Dict[str, Any]) -> None:
     errors = []
 
     # Validate network section
-    required_network_keys = ['netmask', 'gateway', 'dns_server', 'dns_domain']
+    required_network_keys = ["netmask", "gateway", "dns_server", "dns_domain"]
     for key in required_network_keys:
-        if key not in config['network']:
+        if key not in config["network"]:
             errors.append(f"Missing 'network.{key}' in config file")
 
     # Validate common section
-    required_common_keys = ['ovftool_path', 'root_password', 'ntp_server']
+    required_common_keys = ["ovftool_path", "root_password", "ntp_server"]
     for key in required_common_keys:
-        if key not in config['common']:
+        if key not in config["common"]:
             errors.append(f"Missing 'common.{key}' in config file")
 
     # Validate vcf_installer section
     required_vcf_keys = [
-        'ova_path', 'vm_name', 'hostname', 'ip',
-        'root_password', 'admin_password', 'target_host', 'vm_network'
+        "ova_path",
+        "vm_name",
+        "hostname",
+        "ip",
+        "root_password",
+        "admin_password",
+        "target_host",
+        "vm_network",
     ]
     for key in required_vcf_keys:
-        if key not in config['vcf_installer']:
+        if key not in config["vcf_installer"]:
             errors.append(f"Missing 'vcf_installer.{key}' in config file")
 
     # Validate hosts section
-    if not config.get('hosts') or not isinstance(config['hosts'], list):
+    if not config.get("hosts") or not isinstance(config["hosts"], list):
         errors.append("'hosts' must be a non-empty list")
     else:
-        required_host_keys = ['number', 'hostname', 'ip', 'datastore_name']
-        for idx, host in enumerate(config['hosts']):
+        required_host_keys = ["number", "hostname", "ip", "datastore_name"]
+        for idx, host in enumerate(config["hosts"]):
             for key in required_host_keys:
                 if key not in host:
                     errors.append(f"Missing 'hosts[{idx}].{key}' in config file")
@@ -109,20 +117,22 @@ class VCFInstallerDeployer:
         self.config = config
 
         # Get configuration values
-        self.ovftool_path = config['common']['ovftool_path']
-        self.vcf_installer = config['vcf_installer']
-        self.network = config['network']
+        self.ovftool_path = config["common"]["ovftool_path"]
+        self.vcf_installer = config["vcf_installer"]
+        self.network = config["network"]
 
         # Determine target host
-        target_host_num = self.vcf_installer['target_host']
+        target_host_num = self.vcf_installer["target_host"]
         self.target_host = None
-        for host in config['hosts']:
-            if host['number'] == target_host_num:
+        for host in config["hosts"]:
+            if host["number"] == target_host_num:
                 self.target_host = host
                 break
 
         if not self.target_host:
-            print(f"{Colors.RED}ERROR: Target host {target_host_num} not found in config{Colors.NC}")
+            print(
+                f"{Colors.RED}ERROR: Target host {target_host_num} not found in config{Colors.NC}"
+            )
             sys.exit(1)
 
     def validate_prerequisites(self) -> bool:
@@ -143,14 +153,16 @@ class VCFInstallerDeployer:
             print(f"{Colors.GREEN}✓ OVFTool found: {ovftool}{Colors.NC}")
 
         # Check OVA file exists
-        ova_path = Path(self.vcf_installer['ova_path'])
+        ova_path = Path(self.vcf_installer["ova_path"])
         if not ova_path.exists():
             print(f"{Colors.RED}✗ VCF Installer OVA not found: {ova_path}{Colors.NC}")
             all_valid = False
         else:
             # Get OVA size in MB
             ova_size_mb = ova_path.stat().st_size / (1024 * 1024)
-            print(f"{Colors.GREEN}✓ VCF Installer OVA found: {ova_path} ({ova_size_mb:.1f} MB){Colors.NC}")
+            print(
+                f"{Colors.GREEN}✓ VCF Installer OVA found: {ova_path} ({ova_size_mb:.1f} MB){Colors.NC}"
+            )
 
         print()
         return all_valid
@@ -160,7 +172,7 @@ class VCFInstallerDeployer:
         vcf = self.vcf_installer
         target = self.target_host
         network = self.network
-        common = self.config['common']
+        common = self.config["common"]
 
         # ESXi target URL
         esxi_url = f"vi://root:{common['root_password']}@{target['ip']}/"
@@ -190,8 +202,8 @@ class VCFInstallerDeployer:
             f"--prop:ROOT_PASSWORD={vcf['root_password']}",
             f"--prop:LOCAL_USER_PASSWORD={vcf['admin_password']}",
             f"--prop:guestinfo.ntp={common['ntp_server']}",
-            vcf['ova_path'],
-            esxi_url
+            vcf["ova_path"],
+            esxi_url,
         ]
 
         return cmd
@@ -215,7 +227,9 @@ class VCFInstallerDeployer:
         print(f"  VM Name:     {self.vcf_installer['vm_name']}")
         print(f"  Hostname:    {self.vcf_installer['hostname']}")
         print(f"  IP Address:  {self.vcf_installer['ip']}")
-        print(f"  Target Host: {self.target_host['hostname']} ({self.target_host['ip']})")
+        print(
+            f"  Target Host: {self.target_host['hostname']} ({self.target_host['ip']})"
+        )
         print(f"  Datastore:   {self.target_host['datastore_name']}")
         print(f"  Network:     {self.vcf_installer['vm_network']}")
         print()
@@ -223,50 +237,61 @@ class VCFInstallerDeployer:
         if dry_run:
             print(f"{Colors.YELLOW}========================================{Colors.NC}")
             print(f"{Colors.YELLOW}DRY RUN MODE - No deployment will occur{Colors.NC}")
-            print(f"{Colors.YELLOW}========================================{Colors.NC}\n")
+            print(
+                f"{Colors.YELLOW}========================================{Colors.NC}\n"
+            )
 
             print(f"{Colors.YELLOW}Command that would be executed:{Colors.NC}")
             # Mask password in display
             display_cmd = []
             for arg in cmd:
-                if 'root_password' in str(arg) or 'PASSWORD' in str(arg):
+                if "root_password" in str(arg) or "PASSWORD" in str(arg):
                     # Mask the password
-                    if '=' in arg:
-                        key, _ = arg.split('=', 1)
+                    if "=" in arg:
+                        key, _ = arg.split("=", 1)
                         display_cmd.append(f"{key}=********")
-                    elif '@' in arg:
+                    elif "@" in arg:
                         # Mask password in URL
-                        display_cmd.append(arg.replace(self.config['common']['root_password'], '********'))
+                        display_cmd.append(
+                            arg.replace(
+                                self.config["common"]["root_password"], "********"
+                            )
+                        )
                     else:
                         display_cmd.append(arg)
                 else:
                     display_cmd.append(arg)
 
-            print(' \\\n  '.join(display_cmd))
+            print(" \\\n  ".join(display_cmd))
             print()
             return True
 
         # Deploy
-        print(f"{Colors.YELLOW}Deploying VCF Installer {self.vcf_installer['vm_name']}...{Colors.NC}")
+        print(
+            f"{Colors.YELLOW}Deploying VCF Installer {self.vcf_installer['vm_name']}...{Colors.NC}"
+        )
         print(f"{Colors.YELLOW}This may take 10-15 minutes...{Colors.NC}\n")
 
         try:
-            result = subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
             print(result.stdout)
 
-            print(f"\n{Colors.GREEN}========================================{Colors.NC}")
+            print(
+                f"\n{Colors.GREEN}========================================{Colors.NC}"
+            )
             print(f"{Colors.GREEN}Deployment Complete!{Colors.NC}")
-            print(f"{Colors.GREEN}========================================{Colors.NC}\n")
+            print(
+                f"{Colors.GREEN}========================================{Colors.NC}\n"
+            )
 
             print(f"{Colors.BLUE}Next Steps:{Colors.NC}")
-            print(f"  1. Access VCF Installer UI: https://{self.vcf_installer['hostname']}/")
-            print(f"  2. Run: {Colors.YELLOW}uv run scripts/setup_vcf_installer.py{Colors.NC}")
+            print(
+                f"  1. Access VCF Installer UI: https://{self.vcf_installer['hostname']}/"
+            )
+            print(
+                f"  2. Run: {Colors.YELLOW}uv run scripts/setup_vcf_installer.py{Colors.NC}"
+            )
             print()
 
             return True
@@ -282,7 +307,9 @@ class VCFInstallerDeployer:
                 print(e.stderr)
             return False
         except Exception as e:
-            print(f"\n{Colors.RED}ERROR: Unexpected error during deployment: {e}{Colors.NC}")
+            print(
+                f"\n{Colors.RED}ERROR: Unexpected error during deployment: {e}{Colors.NC}"
+            )
             return False
 
 
@@ -300,19 +327,21 @@ Requirements:
   - VMware OVFTool must be installed
   - Target ESXi host must be accessible
   - VCF Installer OVA must be available
-        """
+        """,
     )
 
     parser.add_argument(
-        "-d", "--dry-run",
+        "-d",
+        "--dry-run",
         action="store_true",
-        help="Preview deployment without executing"
+        help="Preview deployment without executing",
     )
 
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         type=Path,
-        help="Path to YAML config file (default: config/vcf-config.yaml)"
+        help="Path to YAML config file (default: config/vcf-config.yaml)",
     )
 
     args = parser.parse_args()
@@ -322,7 +351,9 @@ Requirements:
     project_dir = script_dir.parent
 
     # Determine config file
-    config_file = args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    config_file = (
+        args.config if args.config else project_dir / "config" / "vcf-config.yaml"
+    )
 
     # Load configuration
     config = load_config(config_file)

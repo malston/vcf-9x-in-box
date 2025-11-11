@@ -2,7 +2,7 @@
 # Author: William Lam
 
 OVFTOOL="/Applications/VMware OVF Tool/ovftool"
-VCF_INSTALLER_OVA="/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+VCF_INSTALLER_OVA="/Volumes/vcf-content/Software/depot/VCF9/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.0.1.0.24962180.ova"
 
 # Check if ovftool exists and is executable
 if [[ ! -x "$OVFTOOL" ]]; then

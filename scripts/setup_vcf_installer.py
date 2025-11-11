@@ -207,7 +207,14 @@ class VCFInstallerConfigurator:
                 overwrite=True
             )
 
+            print(f"{Colors.BLUE}File transfer URL: {url}{Colors.NC}")
+
             # Upload the script
+            # Replace * with ESXi host IP if URL contains wildcard
+            if '*' in url:
+                url = url.replace('*', self.target_host['ip'])
+                print(f"{Colors.BLUE}Adjusted URL: {url}{Colors.NC}")
+
             response = requests.put(url, data=script_content, verify=False, timeout=30)
             if response.status_code not in [200, 201]:
                 print(f"{Colors.RED}ERROR: Failed to upload script (HTTP {response.status_code}){Colors.NC}")

@@ -9,7 +9,7 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 try:
     import yaml
@@ -44,6 +44,9 @@ def load_config(config_file: Path) -> Dict[str, Any]:
                 print(f"{Colors.RED}ERROR: Missing '{section}' section in config file{Colors.NC}")
                 sys.exit(1)
 
+        # Validate required keys in each section
+        validate_config_keys(config)
+
         return config
 
     except yaml.YAMLError as e:
@@ -51,6 +54,49 @@ def load_config(config_file: Path) -> Dict[str, Any]:
         sys.exit(1)
     except Exception as e:
         print(f"{Colors.RED}ERROR: Failed to load config: {e}{Colors.NC}")
+        sys.exit(1)
+
+
+def validate_config_keys(config: Dict[str, Any]) -> None:
+    """Validate that all required configuration keys exist"""
+    errors = []
+
+    # Validate network section
+    required_network_keys = ['netmask', 'gateway', 'dns_server', 'dns_domain']
+    for key in required_network_keys:
+        if key not in config['network']:
+            errors.append(f"Missing 'network.{key}' in config file")
+
+    # Validate common section
+    required_common_keys = ['ovftool_path', 'root_password', 'ntp_server']
+    for key in required_common_keys:
+        if key not in config['common']:
+            errors.append(f"Missing 'common.{key}' in config file")
+
+    # Validate vcf_installer section
+    required_vcf_keys = [
+        'ova_path', 'vm_name', 'hostname', 'ip',
+        'root_password', 'admin_password', 'target_host', 'vm_network'
+    ]
+    for key in required_vcf_keys:
+        if key not in config['vcf_installer']:
+            errors.append(f"Missing 'vcf_installer.{key}' in config file")
+
+    # Validate hosts section
+    if not config.get('hosts') or not isinstance(config['hosts'], list):
+        errors.append("'hosts' must be a non-empty list")
+    else:
+        required_host_keys = ['number', 'hostname', 'ip', 'datastore_name']
+        for idx, host in enumerate(config['hosts']):
+            for key in required_host_keys:
+                if key not in host:
+                    errors.append(f"Missing 'hosts[{idx}].{key}' in config file")
+
+    # Report all errors at once
+    if errors:
+        print(f"{Colors.RED}ERROR: Configuration validation failed:{Colors.NC}")
+        for error in errors:
+            print(f"  - {error}")
         sys.exit(1)
 
 
@@ -109,7 +155,7 @@ class VCFInstallerDeployer:
         print()
         return all_valid
 
-    def build_ovftool_command(self) -> list[str]:
+    def build_ovftool_command(self) -> List[str]:
         """Build the ovftool command with all parameters"""
         vcf = self.vcf_installer
         target = self.target_host

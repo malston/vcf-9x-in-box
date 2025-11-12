@@ -70,6 +70,7 @@ class KickstartGenerator:
         return {
             # Network settings
             "vlan_id": network["vlan_id"],
+            "vmnic": network["vmnic"],
             "host_ip": host_config["ip"],
             "netmask": network["netmask"],
             "gateway": network["gateway"],

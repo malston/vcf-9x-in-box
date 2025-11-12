@@ -110,6 +110,7 @@ Each step **depends on the previous step** being completed successfully:
 network:
   gateway: "172.30.0.1"
   vlan_id: "30"
+  vmnic: "vmnic1"
   dns_server: "192.168.10.2"
 
 # Common settings for ALL hosts

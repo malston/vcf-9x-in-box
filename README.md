@@ -217,6 +217,7 @@ All configuration is now managed via YAML. To customize host configurations:
 network:
   gateway: "172.30.0.1"  # Change gateway
   vlan_id: "30"          # Change VLAN
+  vmnic: "vmnic1"        # Change VM NIC
 
 hosts:
   - number: 1

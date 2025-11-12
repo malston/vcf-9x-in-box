@@ -155,6 +155,10 @@ setup-vcf-installer-dryrun: sync ## Preview VCF Installer configuration (dry run
 	@echo "$(YELLOW)Dry run: VCF Installer configuration$(NC)"
 	@uv run scripts/setup_vcf_installer.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
+validate-vcf-installer: sync ## Validate VCF Installer configuration was applied
+	@echo "$(GREEN)Validating VCF Installer configuration...$(NC)"
+	@uv run scripts/validate_vcf_installer_config.py $(if $(CONFIG),--config $(CONFIG),)
+
 fix-vsan-policy: sync ## Fix vSAN ESA storage policy for 2-node deployments
 	@echo "$(GREEN)Fixing vSAN storage policy...$(NC)"
 	@uv run scripts/fix_vsan_esa_default_storage_policy.py $(if $(CONFIG),--config $(CONFIG),)

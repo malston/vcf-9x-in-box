@@ -2,26 +2,11 @@
     "sddcId": "vcf-m01",
     "vcfInstanceName": "Mark Alston's VCF 9 Instance",
     "workflowType": "VCF",
-    "version": "9.0.0.0",
+    "version": "9.0.1.0",
     "ceipEnabled": false,
     "fipsEnabled": true,
     "skipEsxThumbprintValidation": true,
     "skipGatewayPingValidation": true,
-    "sddcManagerSpec": {
-        "rootUserCredentials": {
-            "username": "root",
-            "password": "VMware1!VMware1!"
-        },
-        "secondUserCredentials": {
-            "username": "vcf",
-            "password": "VMware1!VMware1!"
-        },
-        "hostname": "sddcm01",
-        "useExistingDeployment": true,
-        "rootPassword": "VMware1!VMware1!",
-        "sshPassword": "VMware1!VMware1!",
-        "localUserPassword": "Cl0udFoundry!23"
-    },
     "dnsSpec": {
         "nameservers": [
             "192.168.10.2"
@@ -29,7 +14,7 @@
         "subdomain": "vcf.lab"
     },
     "ntpServers": [
-        "pool.ntp.org"
+        "104.167.215.195"
     ],
     "vcenterSpec": {
         "vcenterHostname": "vc01",
@@ -40,29 +25,6 @@
         "ssoDomain": "vsphere.local",
         "useExistingDeployment": false
     },
-    "hostSpecs": [
-        {
-            "hostname": "esx01",
-            "credentials": {
-                "username": "root",
-                "password": "VMware1!"
-            }
-        },
-        {
-            "hostname": "esx02",
-            "credentials": {
-                "username": "root",
-                "password": "VMware1!"
-            }
-        },
-        {
-            "hostname": "esx03",
-            "credentials": {
-                "username": "root",
-                "password": "VMware1!"
-            }
-        }
-    ],
     "clusterSpec": {
         "clusterName": "VCF-Mgmt-Cluster",
         "datacenterName": "VCF-Datacenter",
@@ -83,7 +45,7 @@
         "nsxtManagerSize": "medium",
         "nsxtManagers": [
             {
-                "hostname": "nsx01a"
+                "hostname": "mgmt-nsx01a"
             }
         ],
         "vipFqdn": "nsx01",
@@ -98,13 +60,13 @@
             "subnets": [
                 {
                     "cidr": "172.30.60.0/24",
+                    "gateway": "172.30.60.1",
                     "ipAddressPoolRanges": [
                         {
                             "start": "172.30.60.150",
                             "end": "172.30.60.160"
                         }
-                    ],
-                    "gateway": "172.30.60.1"
+                    ]
                 }
             ]
         },
@@ -121,7 +83,7 @@
         "adminUserPassword": "VMware1!VMware1!",
         "applianceSize": "small",
         "useExistingDeployment": false,
-        "loadBalancerFqdn": ""
+        "loadBalancerFqdn": null
     },
     "vcfOperationsFleetManagementSpec": {
         "hostname": "opsfm01",
@@ -146,6 +108,32 @@
         "internalClusterCidr": "198.18.0.0/15",
         "useExistingDeployment": false
     },
+    "hostSpecs": [
+        {
+            "hostname": "esx01",
+            "credentials": {
+                "username": "root",
+                "password": "VMware1!"
+            },
+            "sslThumbprint": "0E:B2:55:04:AD:A4:A2:D4:C5:0B:E4:69:8C:CC:F5:72:D1:5F:93:25:02:CA:19:50:03:4C:F7:4C:87:6F:60:C4"
+        },
+        {
+            "hostname": "esx02",
+            "credentials": {
+                "username": "root",
+                "password": "VMware1!"
+            },
+            "sslThumbprint": "17:B4:78:F9:F0:96:93:A9:CA:E6:09:85:28:F2:BD:B2:06:37:0B:36:98:D7:8A:11:FF:01:12:38:7A:23:8B:A0"
+        },
+        {
+            "hostname": "esx03",
+            "credentials": {
+                "username": "root",
+                "password": "VMware1!"
+            },
+            "sslThumbprint": "00:D9:44:A7:8D:D1:0A:95:26:A6:37:14:9D:56:DF:0A:D1:E8:C0:50:73:E7:E0:BF:C5:2A:0C:6D:0D:48:23:0E"
+        }
+    ],
     "networkSpecs": [
         {
             "networkType": "MANAGEMENT",
@@ -155,7 +143,7 @@
             "includeIpAddress": null,
             "includeIpAddressRanges": null,
             "vlanId": "30",
-            "mtu": "1500",
+            "mtu": 1500,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
@@ -171,7 +159,7 @@
             "includeIpAddress": null,
             "includeIpAddressRanges": null,
             "vlanId": "30",
-            "mtu": "1500",
+            "mtu": 1500,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
@@ -192,7 +180,7 @@
                 }
             ],
             "vlanId": "40",
-            "mtu": "9000",
+            "mtu": 9000,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
@@ -213,7 +201,7 @@
                 }
             ],
             "vlanId": "50",
-            "mtu": "9000",
+            "mtu": 9000,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
@@ -247,17 +235,17 @@
             },
             "vmnicsToUplinks": [
                 {
-                    "uplink": "uplink1",
-                    "id": "vmnic0"
+                    "id": "vmnic0",
+                    "uplink": "uplink1"
                 }
             ],
             "nsxTeamings": [
                 {
-                    "standByUplinks": [],
                     "policy": "LOADBALANCE_SRCID",
                     "activeUplinks": [
                         "uplink1"
-                    ]
+                    ],
+                    "standByUplinks": []
                 }
             ],
             "lagSpecs": null,
@@ -265,5 +253,20 @@
                 "vmnic0"
             ]
         }
-    ]
+    ],
+    "sddcManagerSpec": {
+        "rootUserCredentials": {
+            "username": "root",
+            "password": "VMware1!VMware1!"
+        },
+        "secondUserCredentials": {
+            "username": "vcf",
+            "password": "VMware1!VMware1!"
+        },
+        "hostname": "sddcm01",
+        "useExistingDeployment": true,
+        "rootPassword": "VMware1!VMware1!",
+        "sshPassword": "VMware1!VMware1!",
+        "localUserPassword": "Cl0udFoundry!23"
+    }
 }

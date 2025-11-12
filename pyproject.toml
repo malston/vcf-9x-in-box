@@ -16,6 +16,7 @@ generate-kickstart = "scripts.generate_kickstart:main"
 create-esxi-usb = "scripts.create_esxi_usb:main"
 deploy-vcf-installer = "scripts.deploy_vcf_installer:main"
 setup-vcf-installer = "scripts.setup_vcf_installer:main"
+validate-vcf-installer = "scripts.validate_vcf_installer_config:main"
 fix-vsan-policy = "scripts.fix_vsan_esa_default_storage_policy:main"
 
 [build-system]

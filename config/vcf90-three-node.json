@@ -237,26 +237,20 @@
                 {
                     "id": "vmnic0",
                     "uplink": "uplink1"
-                },
-                {
-                    "id": "vmnic1",
-                    "uplink": "uplink2"
                 }
             ],
             "nsxTeamings": [
                 {
                     "policy": "LOADBALANCE_SRCID",
                     "activeUplinks": [
-                        "uplink1",
-                        "uplink2"
+                        "uplink1"
                     ],
                     "standByUplinks": []
                 }
             ],
             "lagSpecs": null,
             "vmnics": [
-                "vmnic0",
-                "vmnic1"
+                "vmnic0"
             ]
         }
     ],

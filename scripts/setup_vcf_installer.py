@@ -149,14 +149,16 @@ class VCFInstallerConfigurator:
             script += "systemctl restart sshd\n"
 
         # Domain manager properties
-        vcf_domain_config_file = "/etc/vmware/vcf/domainmanager/application.properties"
+        vcf_domain_config_file = "/opt/vmware/vcf/domainmanager/conf/application.properties"
         if vcf.get('features', {}).get('skip_nic_speed_validation', False):
-            script += f"echo 'enable.speed.of.physical.nics.validation=false' >> {vcf_domain_config_file}\n"
+            # Only add if not already present (idempotent)
+            script += f"grep -q 'enable.speed.of.physical.nics.validation=false' {vcf_domain_config_file} || echo 'enable.speed.of.physical.nics.validation=false' >> {vcf_domain_config_file}\n"
 
         # Feature properties
         vcf_feature_config_file = "/home/vcf/feature.properties"
         if vcf.get('features', {}).get('single_host_domain', False):
-            script += f"echo 'feature.vcf.internal.single.host.domain=true' >> {vcf_feature_config_file}\n"
+            # Only add if not already present (idempotent)
+            script += f"grep -q 'feature.vcf.internal.single.host.domain=true' {vcf_feature_config_file} 2>/dev/null || echo 'feature.vcf.internal.single.host.domain=true' >> {vcf_feature_config_file}\n"
         script += f"chmod 755 {vcf_feature_config_file}\n"
 
         # Software depot configuration
@@ -164,7 +166,8 @@ class VCFInstallerConfigurator:
         if depot.get('type') == 'offline':
             vcf_lcm_config_file = "/opt/vmware/vcf/lcm/lcm-app/conf/application-prod.properties"
             if not depot.get('use_https', True):
-                script += f"sed -i -e '/lcm.depot.adapter.port=.*/a lcm.depot.adapter.httpsEnabled=false' {vcf_lcm_config_file}\n"
+                # Only add if not already present (idempotent)
+                script += f"grep -q 'lcm.depot.adapter.httpsEnabled=false' {vcf_lcm_config_file} || sed -i -e '/lcm.depot.adapter.port=.*/a lcm.depot.adapter.httpsEnabled=false' {vcf_lcm_config_file}\n"
 
         # Restart services
         script += "echo 'y' | /opt/vmware/vcf/operationsmanager/scripts/cli/sddcmanager_restart_services.sh\n"

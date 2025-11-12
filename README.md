@@ -477,7 +477,7 @@ For two-node deployments **ONLY**, run this script **immediately after starting 
 | esx03      | esx03.vcf.lab       | 172.30.0.13  | Physical ESX-3 Server                    |
 | vcf01      | vcf01.vcf.lab       | 172.30.0.14  | VCF Operations                           |
 | nsx01      | nsx01.vcf.lab       | 172.30.0.15  | NSX Manager VIP for Management Domain    |
-| nsx01a     | mgmt-nsx01a.vcf.lab | 172.30.0.16  | NSX Manager for Management Domain        |
+| nsx01a     | nsx01a.vcf.lab      | 172.30.0.16  | NSX Manager for Management Domain        |
 | edge01a    | edge01a.vcf.lab     | 172.30.0.17  | NSX Edge 1a for Management Domain        |
 | edge01b    | edge01b.vcf.lab     | 172.30.0.18  | NSX Edge 1b for Management Domain        |
 | opsfm01    | opsfm01.vcf.lab     | 172.30.0.19  | VCF Operations Fleet Manager             |

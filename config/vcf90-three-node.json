@@ -45,7 +45,7 @@
         "nsxtManagerSize": "medium",
         "nsxtManagers": [
             {
-                "hostname": "mgmt-nsx01a"
+                "hostname": "nsx01a"
             }
         ],
         "vipFqdn": "nsx01",

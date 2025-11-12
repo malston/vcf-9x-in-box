@@ -179,23 +179,23 @@ validate-vcf-installer: sync ## Validate VCF Installer configuration was applied
 	@echo "$(GREEN)Validating VCF Installer configuration...$(NC)"
 	@uv run scripts/validate_vcf_installer_config.py $(if $(CONFIG),--config $(CONFIG),)
 
-fix-vsan-policy: sync ## Fix vSAN ESA storage policy for 2-node deployments
-	@echo "$(GREEN)Fixing vSAN storage policy...$(NC)"
-	@uv run scripts/fix_vsan_esa_default_storage_policy.py $(if $(CONFIG),--config $(CONFIG),)
-	@echo "$(GREEN)✓ vSAN storage policy fixed$(NC)"
+# fix-vsan-policy: sync ## Fix vSAN ESA storage policy for 2-node deployments
+# 	@echo "$(GREEN)Fixing vSAN storage policy...$(NC)"
+# 	@uv run scripts/fix_vsan_esa_default_storage_policy.py $(if $(CONFIG),--config $(CONFIG),)
+# 	@echo "$(GREEN)✓ vSAN storage policy fixed$(NC)"
 
-fix-vsan-policy-dryrun: sync ## Preview vSAN policy fix (dry run)
-	@echo "$(YELLOW)Dry run: vSAN storage policy fix$(NC)"
-	@uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+# fix-vsan-policy-dryrun: sync ## Preview vSAN policy fix (dry run)
+# 	@echo "$(YELLOW)Dry run: vSAN storage policy fix$(NC)"
+# 	@uv run scripts/fix_vsan_esa_default_storage_policy.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
-fix-vsan-hcl-timestamp: sync ## Fix vSAN HCL timestamp for VCF 9.0.1
-	@echo "$(GREEN)Fixing vSAN HCL timestamp...$(NC)"
-	@uv run scripts/fix_vsan_hcl_timestamp.py $(if $(CONFIG),--config $(CONFIG),)
-	@echo "$(GREEN)✓ vSAN HCL timestamp fixed$(NC)"
+# fix-vsan-hcl-timestamp: sync ## Fix vSAN HCL timestamp for VCF 9.0.1
+# 	@echo "$(GREEN)Fixing vSAN HCL timestamp...$(NC)"
+# 	@uv run scripts/fix_vsan_hcl_timestamp.py $(if $(CONFIG),--config $(CONFIG),)
+# 	@echo "$(GREEN)✓ vSAN HCL timestamp fixed$(NC)"
 
-fix-vsan-hcl-timestamp-dryrun: sync ## Preview vSAN HCL timestamp fix (dry run)
-	@echo "$(YELLOW)Dry run: vSAN HCL timestamp fix$(NC)"
-	@uv run scripts/fix_vsan_hcl_timestamp.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+# fix-vsan-hcl-timestamp-dryrun: sync ## Preview vSAN HCL timestamp fix (dry run)
+# 	@echo "$(YELLOW)Dry run: vSAN HCL timestamp fix$(NC)"
+# 	@uv run scripts/fix_vsan_hcl_timestamp.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
 fix-vsan-hcl-bypass: sync ## Enable vSAN ESA HCL bypass (VCF 9.0.1 built-in)
 	@echo "$(GREEN)Enabling vSAN ESA HCL bypass...$(NC)"

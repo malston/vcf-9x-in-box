@@ -2,7 +2,7 @@ vmaccepteula
 install --disk={{ install_disk }} --overwritevmfs
 reboot
 
-network --bootproto=static --device=vmnic1 --vlanid={{ vlan_id }} --ip={{ host_ip }} --netmask={{ netmask }} --gateway={{ gateway }} --hostname={{ hostname }} --nameserver={{ dns_server }} --addvmportgroup=1
+network --bootproto=static --device=vmnic0 --vlanid={{ vlan_id }} --ip={{ host_ip }} --netmask={{ netmask }} --gateway={{ gateway }} --hostname={{ hostname }} --nameserver={{ dns_server }} --addvmportgroup=1
 rootpw {{ root_password }}
 
 %firstboot --interpreter=busybox

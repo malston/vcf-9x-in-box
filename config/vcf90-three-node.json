@@ -115,7 +115,7 @@
                 "username": "root",
                 "password": "VMware1!"
             },
-            "sslThumbprint": "0E:B2:55:04:AD:A4:A2:D4:C5:0B:E4:69:8C:CC:F5:72:D1:5F:93:25:02:CA:19:50:03:4C:F7:4C:87:6F:60:C4"
+            "sslThumbprint": ""
         },
         {
             "hostname": "esx02",
@@ -123,7 +123,7 @@
                 "username": "root",
                 "password": "VMware1!"
             },
-            "sslThumbprint": "17:B4:78:F9:F0:96:93:A9:CA:E6:09:85:28:F2:BD:B2:06:37:0B:36:98:D7:8A:11:FF:01:12:38:7A:23:8B:A0"
+            "sslThumbprint": ""
         },
         {
             "hostname": "esx03",
@@ -131,7 +131,7 @@
                 "username": "root",
                 "password": "VMware1!"
             },
-            "sslThumbprint": "00:D9:44:A7:8D:D1:0A:95:26:A6:37:14:9D:56:DF:0A:D1:E8:C0:50:73:E7:E0:BF:C5:2A:0C:6D:0D:48:23:0E"
+            "sslThumbprint": ""
         }
     ],
     "networkSpecs": [

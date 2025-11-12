@@ -276,6 +276,53 @@ class VCFInstallerValidator:
             )
             return False
 
+    def validate_hosts_file(self) -> bool:
+        """Validate /etc/hosts file configuration for DNS resolution"""
+        print(f"{Colors.BLUE}Checking /etc/hosts configuration...{Colors.NC}")
+
+        hostname = self.vcf_installer["hostname"]
+        ip = self.vcf_installer["ip"]
+
+        # Check if hostname is mapped to 127.0.0.1 (WRONG)
+        cmd = f'grep -E "^127\\.0\\.0\\.1[[:space:]].*{hostname}" /etc/hosts'
+        exit_code, _ = self.execute_command(cmd)
+
+        if exit_code == 0:
+            print(
+                f"{Colors.RED}  ✗ ERROR: {hostname} is mapped to 127.0.0.1 in /etc/hosts{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    This will cause DNS validation failures in VCF deployment!{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    Fix: Remove 127.0.0.1 entry for {hostname} in /etc/hosts{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    The hostname should resolve to {ip} instead{Colors.NC}"
+            )
+            return False
+
+        # Check if hostname is mapped to correct IP (CORRECT)
+        cmd = f'grep -E "^{ip}[[:space:]].*{hostname}" /etc/hosts'
+        exit_code, _ = self.execute_command(cmd)
+
+        if exit_code == 0:
+            print(
+                f"{Colors.GREEN}  ✓ {hostname} is correctly mapped to {ip}{Colors.NC}"
+            )
+            return True
+        else:
+            print(
+                f"{Colors.YELLOW}  ⚠ {hostname} not found mapped to {ip} in /etc/hosts{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    Hostname will rely on DNS resolution{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    This is acceptable if DNS is properly configured{Colors.NC}"
+            )
+            return True  # Not a failure, just informational
+
     def disconnect(self):
         """Disconnect from ESXi"""
         if self.si:
@@ -316,6 +363,7 @@ class VCFInstallerValidator:
         results.append(("Feature File Permissions", self.validate_feature_file_permissions()))
         results.append(("VCF Installer UI", self.validate_services_restarted()))
         results.append(("vSAN HCL Bypass", self.validate_vsan_hcl_bypass()))
+        results.append(("/etc/hosts Configuration", self.validate_hosts_file()))
 
         # Summary
         print(f"\n{Colors.GREEN}========================================{Colors.NC}")
@@ -353,6 +401,7 @@ def main():
     - Feature file permissions
     - VCF services running
     - vSAN ESA HCL bypass enabled (VCF 9.0.1)
+    - /etc/hosts configuration (hostname not mapped to 127.0.0.1)
     """
     parser = argparse.ArgumentParser(
         description="Validate VCF Installer configuration",

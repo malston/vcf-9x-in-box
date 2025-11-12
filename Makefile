@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format format-imports check-imports
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -136,6 +136,26 @@ setup-ssh-keys-dryrun: sync ## Preview SSH key setup (dry run)
 	@uv run scripts/setup_esxi_ssh_keys.py --dry-run $(if $(CONFIG),--config $(CONFIG),) $(if $(KEY),--key-name $(KEY),)
 
 ##@ VCF Deployment
+
+list-vms: sync ## List all VMs on all ESXi hosts
+	@echo "$(GREEN)Listing VMs on all hosts...$(NC)"
+	@uv run scripts/list_vms.py $(if $(CONFIG),--config $(CONFIG),)
+
+delete-all-vms: sync ## Delete all VMs from all ESXi hosts (use EXCLUDE to skip VMs)
+	@echo "$(RED)Deleting all VMs...$(NC)"
+	@uv run scripts/delete_all_vms.py $(if $(EXCLUDE),--exclude $(EXCLUDE),) $(if $(CONFIG),--config $(CONFIG),)
+
+delete-all-vms-dryrun: sync ## Preview VM deletion (dry run)
+	@echo "$(YELLOW)Dry run: Delete all VMs$(NC)"
+	@uv run scripts/delete_all_vms.py --dry-run $(if $(EXCLUDE),--exclude $(EXCLUDE),) $(if $(CONFIG),--config $(CONFIG),)
+
+cleanup-vcf: sync ## Clean up failed VCF deployment (remove Installer VM & reset hosts)
+	@echo "$(YELLOW)Cleaning up VCF deployment...$(NC)"
+	@uv run scripts/cleanup_vcf_deployment.py $(if $(CONFIG),--config $(CONFIG),)
+
+cleanup-vcf-dryrun: sync ## Preview VCF cleanup (dry run)
+	@echo "$(YELLOW)Dry run: VCF cleanup$(NC)"
+	@uv run scripts/cleanup_vcf_deployment.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
 
 deploy-vcf-installer: sync ## Deploy VCF Installer OVA to ESXi host
 	@echo "$(GREEN)Deploying VCF Installer...$(NC)"

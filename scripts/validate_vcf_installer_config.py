@@ -147,7 +147,7 @@ class VCFInstallerValidator:
             )
             return True
 
-        cmd = 'grep -q "enable.speed.of.physical.nics.validation=false" /opt/vmware/vcf/domainmanager/conf/application.properties'
+        cmd = 'grep -q "enable.speed.of.physical.nics.validation=false" /etc/vmware/vcf/domainmanager/application.properties'
         exit_code, _ = self.execute_command(cmd)
 
         if exit_code == 0:

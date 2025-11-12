@@ -149,7 +149,7 @@ class VCFInstallerConfigurator:
             script += "systemctl restart sshd\n"
 
         # Domain manager properties
-        vcf_domain_config_file = "/opt/vmware/vcf/domainmanager/conf/application.properties"
+        vcf_domain_config_file = "/etc/vmware/vcf/domainmanager/application.properties"
         if vcf.get('features', {}).get('skip_nic_speed_validation', False):
             # Only add if not already present (idempotent)
             script += f"grep -q 'enable.speed.of.physical.nics.validation=false' {vcf_domain_config_file} || echo 'enable.speed.of.physical.nics.validation=false' >> {vcf_domain_config_file}\n"

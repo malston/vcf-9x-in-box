@@ -249,6 +249,33 @@ class VCFInstallerValidator:
             print(f"{Colors.YELLOW}  ⚠ VCF Installer UI may not be ready yet{Colors.NC}")
             return True  # Don't fail validation for this
 
+    def validate_vsan_hcl_bypass(self) -> bool:
+        """Validate vSAN ESA HCL bypass property is set (VCF 9.0.1)"""
+        print(f"{Colors.BLUE}Checking vSAN ESA HCL bypass property...{Colors.NC}")
+
+        config_file = "/etc/vmware/vcf/domainmanager/application-prod.properties"
+        property_line = "vsan.esa.sddc.managed.disk.claim=true"
+
+        cmd = f'grep -q "{property_line}" {config_file}'
+        exit_code, _ = self.execute_command(cmd)
+
+        if exit_code == 0:
+            print(
+                f"{Colors.GREEN}  ✓ vSAN ESA HCL bypass property is configured{Colors.NC}"
+            )
+            print(
+                f"{Colors.GREEN}    ({property_line}){Colors.NC}"
+            )
+            return True
+        else:
+            print(
+                f"{Colors.YELLOW}  ⚠ vSAN ESA HCL bypass property NOT found{Colors.NC}"
+            )
+            print(
+                f"{Colors.YELLOW}    Run 'make fix-vsan-hcl-bypass' to enable the bypass{Colors.NC}"
+            )
+            return False
+
     def disconnect(self):
         """Disconnect from ESXi"""
         if self.si:
@@ -288,6 +315,7 @@ class VCFInstallerValidator:
         results.append(("Offline Depot", self.validate_offline_depot()))
         results.append(("Feature File Permissions", self.validate_feature_file_permissions()))
         results.append(("VCF Installer UI", self.validate_services_restarted()))
+        results.append(("vSAN HCL Bypass", self.validate_vsan_hcl_bypass()))
 
         # Summary
         print(f"\n{Colors.GREEN}========================================{Colors.NC}")
@@ -324,6 +352,7 @@ def main():
     - Offline depot configured
     - Feature file permissions
     - VCF services running
+    - vSAN ESA HCL bypass enabled (VCF 9.0.1)
     """
     parser = argparse.ArgumentParser(
         description="Validate VCF Installer configuration",

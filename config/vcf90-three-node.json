@@ -14,7 +14,7 @@
         "subdomain": "vcf.lab"
     },
     "ntpServers": [
-        "104.167.215.195"
+        "pool.ntp.org"
     ],
     "vcenterSpec": {
         "vcenterHostname": "vc01",
@@ -237,20 +237,26 @@
                 {
                     "id": "vmnic0",
                     "uplink": "uplink1"
+                },
+                {
+                    "id": "vmnic1",
+                    "uplink": "uplink2"
                 }
             ],
             "nsxTeamings": [
                 {
                     "policy": "LOADBALANCE_SRCID",
                     "activeUplinks": [
-                        "uplink1"
+                        "uplink1",
+                        "uplink2"
                     ],
                     "standByUplinks": []
                 }
             ],
             "lagSpecs": null,
             "vmnics": [
-                "vmnic0"
+                "vmnic0",
+                "vmnic1"
             ]
         }
     ],

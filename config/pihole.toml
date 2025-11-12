@@ -228,7 +228,8 @@
   #     "<enabled>,<ip-address>[/<prefix-len>],<server>[#<port>][,<domain>]", e.g.,
   #     "true,192.168.0.0/24,192.168.0.1,fritz.box"
   revServers = [
-    "true,192.168.2.0/24,192.168.2.1,markalston.net"
+    "true,192.168.2.0/24,192.168.2.1,markalston.net",
+    "true,172.30.0.0/24,127.0.0.1#5335,vcf.lab"
   ] ### CHANGED, default = []
 
   [dns.cache]

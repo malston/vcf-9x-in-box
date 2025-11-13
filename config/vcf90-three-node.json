@@ -114,24 +114,21 @@
             "credentials": {
                 "username": "root",
                 "password": "VMware1!"
-            },
-            "sslThumbprint": ""
+            }
         },
         {
             "hostname": "esx02",
             "credentials": {
                 "username": "root",
                 "password": "VMware1!"
-            },
-            "sslThumbprint": ""
+            }
         },
         {
             "hostname": "esx03",
             "credentials": {
                 "username": "root",
                 "password": "VMware1!"
-            },
-            "sslThumbprint": ""
+            }
         }
     ],
     "networkSpecs": [

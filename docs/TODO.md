@@ -12,5 +12,6 @@
 - [x] Update DNS records in [DNS Policy Table](https://192.168.2.231/network/default/settings/policy-table?preset=dns-records).
 - [x] Create a bootable usb drive with ESXi 9.
 - [x] Install ESXi 9 on all 3 esxi-ms-a2-XX hosts.
+- [x] Install Licenses in [VCF Operations instance](https://vcf01.vcf.lab)
 - [ ] Make sure switch port is configured for jumbo frames
 - [ ] Speed test 10gbe ports

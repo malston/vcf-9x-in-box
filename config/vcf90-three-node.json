@@ -4,9 +4,9 @@
     "workflowType": "VCF",
     "version": "9.0.1.0",
     "ceipEnabled": false,
-    "fipsEnabled": true,
     "skipEsxThumbprintValidation": true,
     "skipGatewayPingValidation": true,
+    "managementPoolName": "vcf-m01-np01",
     "dnsSpec": {
         "nameservers": [
             "192.168.10.2"
@@ -27,14 +27,10 @@
     },
     "clusterSpec": {
         "clusterName": "VCF-Mgmt-Cluster",
-        "datacenterName": "VCF-Datacenter",
-        "clusterEvcMode": "",
-        "clusterImageEnabled": true
+        "datacenterName": "VCF-Datacenter"
     },
     "datastoreSpec": {
         "vsanSpec": {
-            "failuresToTolerate": 1,
-            "vsanDedup": false,
             "esaConfig": {
                 "enabled": true
             },
@@ -70,7 +66,7 @@
                 }
             ]
         },
-        "transportVlanId": "60"
+        "transportVlanId": 60
     },
     "vcfOperationsSpec": {
         "nodes": [
@@ -82,8 +78,7 @@
         ],
         "adminUserPassword": "VMware1!VMware1!",
         "applianceSize": "small",
-        "useExistingDeployment": false,
-        "loadBalancerFqdn": null
+        "useExistingDeployment": false
     },
     "vcfOperationsFleetManagementSpec": {
         "hostname": "opsfm01",
@@ -93,7 +88,7 @@
     },
     "vcfOperationsCollectorSpec": {
         "hostname": "opsproxy01",
-        "applicationSize": "small",
+        "applianceSize": "small",
         "rootUserPassword": "VMware1!VMware1!",
         "useExistingDeployment": false
     },
@@ -136,40 +131,30 @@
             "networkType": "MANAGEMENT",
             "subnet": "172.30.0.0/24",
             "gateway": "172.30.0.1",
-            "subnetMask": null,
-            "includeIpAddress": null,
-            "includeIpAddressRanges": null,
             "vlanId": "30",
             "mtu": 1500,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
             ],
-            "standbyUplinks": [],
             "portGroupKey": "DVPG_FOR_MANAGEMENT"
         },
         {
             "networkType": "VM_MANAGEMENT",
             "subnet": "172.30.0.0/24",
             "gateway": "172.30.0.1",
-            "subnetMask": null,
-            "includeIpAddress": null,
-            "includeIpAddressRanges": null,
             "vlanId": "30",
             "mtu": 1500,
             "teamingPolicy": "loadbalance_loadbased",
             "activeUplinks": [
                 "uplink1"
             ],
-            "standbyUplinks": [],
             "portGroupKey": "DVPG_FOR_VM_MANAGEMENT"
         },
         {
             "networkType": "VMOTION",
             "subnet": "172.30.40.0/24",
             "gateway": "172.30.40.1",
-            "subnetMask": null,
-            "includeIpAddress": null,
             "includeIpAddressRanges": [
                 {
                     "startIpAddress": "172.30.40.150",
@@ -182,15 +167,12 @@
             "activeUplinks": [
                 "uplink1"
             ],
-            "standbyUplinks": [],
             "portGroupKey": "DVPG_FOR_VMOTION"
         },
         {
             "networkType": "VSAN",
             "subnet": "172.30.50.0/24",
             "gateway": "172.30.50.1",
-            "subnetMask": null,
-            "includeIpAddress": null,
             "includeIpAddressRanges": [
                 {
                     "startIpAddress": "172.30.50.150",
@@ -203,7 +185,6 @@
             "activeUplinks": [
                 "uplink1"
             ],
-            "standbyUplinks": [],
             "portGroupKey": "DVPG_FOR_VSAN"
         }
     ],
@@ -216,7 +197,7 @@
                 "VMOTION",
                 "VSAN"
             ],
-            "mtu": "9000",
+            "mtu": 9000,
             "nsxtSwitchConfig": {
                 "transportZones": [
                     {
@@ -232,7 +213,7 @@
             },
             "vmnicsToUplinks": [
                 {
-                    "id": "vmnic0",
+                    "id": "vmnic1",
                     "uplink": "uplink1"
                 }
             ],
@@ -241,26 +222,12 @@
                     "policy": "LOADBALANCE_SRCID",
                     "activeUplinks": [
                         "uplink1"
-                    ],
-                    "standByUplinks": []
+                    ]
                 }
-            ],
-            "lagSpecs": null,
-            "vmnics": [
-                "vmnic0",
-                "vmnic1"
             ]
         }
     ],
     "sddcManagerSpec": {
-        "rootUserCredentials": {
-            "username": "root",
-            "password": "VMware1!VMware1!"
-        },
-        "secondUserCredentials": {
-            "username": "vcf",
-            "password": "VMware1!VMware1!"
-        },
         "hostname": "sddcm01",
         "useExistingDeployment": true,
         "rootPassword": "VMware1!VMware1!",

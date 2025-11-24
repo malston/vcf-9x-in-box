@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy test lint format format-imports check-imports
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy fix-nsx-edge-amd fix-nsx-edge-amd-dryrun test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -205,6 +205,30 @@ fix-vsan-hcl-bypass: sync ## Enable vSAN ESA HCL bypass (VCF 9.0.1 built-in)
 fix-vsan-hcl-bypass-dryrun: sync ## Preview vSAN ESA HCL bypass (dry run)
 	@echo "$(YELLOW)Dry run: vSAN ESA HCL bypass$(NC)"
 	@uv run scripts/fix_vsan_hcl_bypass.py --dry-run $(if $(CONFIG),--config $(CONFIG),)
+
+##@ NSX Edge (AMD Ryzen)
+
+fix-nsx-edge-amd: sync ## Fix NSX Edge for AMD Ryzen CPUs (usage: make fix-nsx-edge-amd PASSWORD='EdgePass')
+	@if [ -z "$(PASSWORD)" ]; then \
+		echo "$(RED)ERROR: PASSWORD not specified$(NC)"; \
+		echo "Usage: make fix-nsx-edge-amd PASSWORD='YourEdgePassword'"; \
+		echo ""; \
+		echo "Get the password from your VCF manifest JSON:"; \
+		echo "  nsxTSpec.nsxEdgeSpec.nsxEdgeAdminPassword"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)Applying NSX Edge AMD Ryzen fix...$(NC)"
+	@uv run scripts/fix_nsx_edge_amd_ryzen.py --password '$(PASSWORD)' $(if $(EDGES),--edges $(EDGES),) $(if $(CONFIG),--config $(CONFIG),)
+	@echo "$(GREEN)✓ NSX Edge AMD fix applied$(NC)"
+
+fix-nsx-edge-amd-dryrun: sync ## Preview NSX Edge AMD fix (dry run)
+	@if [ -z "$(PASSWORD)" ]; then \
+		echo "$(RED)ERROR: PASSWORD not specified$(NC)"; \
+		echo "Usage: make fix-nsx-edge-amd-dryrun PASSWORD='YourEdgePassword'"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Dry run: NSX Edge AMD Ryzen fix$(NC)"
+	@uv run scripts/fix_nsx_edge_amd_ryzen.py --dry-run --password '$(PASSWORD)' $(if $(EDGES),--edges $(EDGES),) $(if $(CONFIG),--config $(CONFIG),)
 
 ##@ Development
 

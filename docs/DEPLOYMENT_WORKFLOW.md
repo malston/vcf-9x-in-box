@@ -9,6 +9,8 @@ This guide explains the complete deployment workflow from generating kickstart c
 - [Complete Workflow](#complete-workflow)
 - [Step-by-Step Process](#step-by-step-process)
 - [File Dependencies](#file-dependencies)
+- [NSX VPC Configuration (Post-Deployment)](#nsx-vpc-configuration-post-deployment)
+- [vSphere Supervisor Configuration](#vsphere-supervisor-configuration)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -903,6 +905,338 @@ VCF Management Domain Deployed            # Complete VCF environment
 | VCF Installer OVA | Orchestrator appliance | VMware (download) | `deploy_vcf_installer.py` |
 | VCF Installer VM | Running orchestrator | `deploy_vcf_installer.py` | `setup_vcf_installer.py`, VCF deployment |
 | `vcf90-three-node.json` | VCF manifest | Project (customize) | VCF Installer (deployment) |
+
+---
+
+## NSX VPC Configuration (Post-Deployment)
+
+After the VCF Management Domain deployment completes, you can configure NSX Virtual Private Cloud (VPC) for workload networking. This is a Day 2 operation that deploys NSX Edge VMs.
+
+**Reference:** [William Lam's NSX VPC Configuration Guide](https://williamlam.com/2025/07/ms-a2-vcf-9-0-lab-configuring-nsx-virtual-private-cloud-vpc.html)
+
+### AMD Ryzen CPU Workaround (CRITICAL)
+
+**Problem:** NSX Edge VMs fail to start the dataplane service on consumer AMD Ryzen CPUs. The Edge VMs will boot loop because NSX validates for "AMD EPYC" in the CPU model name.
+
+**Affected Hardware:** Any AMD Ryzen processor (7945HX, 5900X, etc.) that doesn't identify as "AMD EPYC"
+
+**Symptoms:**
+- Edge VMs power on but continuously reboot
+- VCF deployment stalls at "Configure Network Connectivity" step
+- SSH to edge shows dataplane service failing to start
+
+### When to Apply the Fix
+
+Apply this fix **during** the NSX VPC "Configure Network Connectivity" deployment:
+
+1. Click **Deploy** in the VCF UI to start network connectivity configuration
+2. Wait for the NSX Edge VMs to power on (~5-10 minutes)
+3. **Immediately** run the fix script before the deployment times out
+4. Edge VMs will reboot and come back healthy
+5. VCF deployment continues automatically
+
+### Automated Fix (Recommended)
+
+**Script:** `scripts/fix_nsx_edge_amd_ryzen.py`
+
+**What It Does:**
+
+1. Connects to each NSX Edge VM via SSH
+2. Edits `/os_bak/opt/vmware/nsx-edge/bin/config.py` (VCF 9.0.1 path)
+3. Comments out the AMD EPYC CPU validation
+4. Restarts the dataplane service
+5. Edge VMs reboot with the fix applied
+
+**Commands:**
+
+```bash
+# Get your Edge admin password from your VCF deployment manifest (JSON spec file)
+# Look for: nsxTSpec.nsxEdgeSpec.nsxEdgeAdminPassword
+
+# Preview the fix (dry run)
+make fix-nsx-edge-amd-dryrun PASSWORD='YourEdgePassword'
+
+# Apply the fix
+make fix-nsx-edge-amd PASSWORD='YourEdgePassword'
+
+# Or with custom edge IPs (if different from default 172.30.0.17/18)
+make fix-nsx-edge-amd PASSWORD='YourEdgePassword' EDGES='10.0.0.50 10.0.0.51'
+
+# Or use Python directly
+uv run scripts/fix_nsx_edge_amd_ryzen.py --password 'YourEdgePassword'
+uv run scripts/fix_nsx_edge_amd_ryzen.py --password 'YourEdgePassword' --edges 172.30.0.17 172.30.0.18
+```
+
+**Default Edge IPs:** 172.30.0.17 (edge01a), 172.30.0.18 (edge01b)
+
+### Manual Fix (Alternative)
+
+If you prefer to apply the fix manually:
+
+1. **SSH to each Edge VM:**
+
+   ```bash
+   ssh admin@172.30.0.17  # edge01a
+   ssh admin@172.30.0.18  # edge01b
+   ```
+
+2. **Edit the config file:**
+
+   ```bash
+   # VCF 9.0.1 uses /os_bak path
+   vi /os_bak/opt/vmware/nsx-edge/bin/config.py
+   ```
+
+3. **Comment out lines ~181-184:**
+
+   ```python
+   # Before:
+           if "AMD" in vendor_info and "AMD EPYC" not in model_name:
+               self.error_exit("Unsupported CPU: %s" % model_name)
+
+   # After:
+   #        if "AMD" in vendor_info and "AMD EPYC" not in model_name:
+   #            self.error_exit("Unsupported CPU: %s" % model_name)
+   ```
+
+4. **Restart the dataplane service:**
+
+   ```bash
+   start service dataplane
+   ```
+
+5. **Edge VM reboots automatically** - wait for it to come back online
+
+6. **Repeat for each Edge VM**
+
+### Verification
+
+After applying the fix:
+
+```bash
+# Check edge VMs are reachable
+ping 172.30.0.17
+ping 172.30.0.18
+
+# SSH should work after reboot (~5 minutes)
+ssh admin@172.30.0.17
+
+# Check dataplane status (should be running)
+get service dataplane
+```
+
+### Config File Path
+
+The config file location can vary depending on the Edge deployment state:
+
+| Path | When Used |
+|------|-----------|
+| `/opt/vmware/nsx-edge/bin/config.py` | Standard location (most common) |
+| `/os_bak/opt/vmware/nsx-edge/bin/config.py` | During certain upgrade scenarios |
+
+**The script automatically checks both paths and uses whichever exists.**
+
+If editing manually, check which path exists on your Edge:
+```bash
+ls -la /opt/vmware/nsx-edge/bin/config.py
+ls -la /os_bak/opt/vmware/nsx-edge/bin/config.py
+```
+
+### Timing is Critical
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ VCF UI: Click "Deploy" for Network Connectivity                 │
+│         └─> Edge VMs start deploying                            │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓ (~5-10 minutes)
+┌─────────────────────────────────────────────────────────────────┐
+│ Edge VMs boot, but dataplane fails due to AMD CPU check         │
+│         └─> Edges start rebooting in a loop                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓ (ACT NOW!)
+┌─────────────────────────────────────────────────────────────────┐
+│ Run: make fix-nsx-edge-amd PASSWORD='YourEdgePassword'          │
+│         └─> Script waits for SSH, applies fix, restarts service │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓ (~5 minutes)
+┌─────────────────────────────────────────────────────────────────┐
+│ Edge VMs reboot with fix applied, dataplane starts successfully │
+│         └─> VCF deployment continues automatically              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## vSphere Supervisor Configuration
+
+After NSX VPC is configured, you can enable vSphere Supervisor to run Tanzu Kubernetes workloads.
+
+**Reference:** [William Lam's vSphere Supervisor Guide](https://williamlam.com/2025/08/ms-a2-vcf-9-0-lab-configuring-vsphere-supervisor-with-nsx-vpc-networking.html)
+
+### Prerequisites
+
+Before enabling Supervisor:
+
+- ✅ VCF 9.x Management Domain deployed
+- ✅ NSX VPC configured with Centralized Transit Gateway
+- ✅ 5 consecutive IP addresses reserved for Supervisor Control Plane VMs
+- ✅ DNS entries created for Supervisor (optional but recommended)
+
+### Pre-Configuration Steps
+
+#### 1. Silence vSAN Alerts (Optional)
+
+If you have vSAN health warnings, silence them to avoid distractions during Supervisor deployment.
+
+#### 2. Disable Live Patching
+
+**CRITICAL:** Live Patching must be disabled or you'll get errors like:
+- "Live Patch cannot be performed together with solution(s) com.vmware.vsphere-wcp"
+- "The solution specification is incompatible with Live Patching"
+
+**To disable:**
+1. In vCenter, select the cluster
+2. Go to **Updates → Edit remediation settings**
+3. Disable **Live Patching enforcement**
+
+#### 3. Adjust vSphere HA Admission Control (Small Clusters)
+
+For 2-3 node clusters, the default HA admission control may prevent Supervisor activation.
+
+1. Select the cluster → **Configure → vSphere Availability**
+2. Edit settings
+3. Adjust or disable host failover reservation to allow Supervisor VMs
+
+### Supervisor Activation Steps
+
+#### Step 1: Start Supervisor Activation
+
+1. In vCenter, right-click the cluster (e.g., `VCF-Mgmt-Cluster`)
+2. Select **Activate Supervisor**
+3. Choose **Advanced Topologies**
+4. Select **VCF Networking with VPC**
+
+#### Step 2: Select Deployment Model
+
+1. Choose **Cluster Deployment**
+2. Provide names:
+   - **Supervisor Cluster Name:** e.g., `supervisor-cluster`
+   - **vSphere Zone:** e.g., `vcf-zone` (optional)
+
+#### Step 3: Configure Storage Policy
+
+1. Select VM Storage Policy for Control Plane VMs
+2. Use the VCF-created policy (default)
+
+#### Step 4: Network Configuration
+
+Configure the Supervisor Control Plane network:
+
+| Setting | Example Value |
+|---------|---------------|
+| Network Mode | Static |
+| Starting IP | 172.30.0.40 |
+| Subnet Mask | 255.255.255.0 |
+| Gateway | 172.30.0.1 |
+| DNS Servers | 192.168.10.2 |
+| NTP Servers | pool.ntp.org |
+
+**Note:** You need **5 consecutive IPs** (e.g., 172.30.0.40-44) for the 3 Supervisor Control Plane VMs plus floating IPs.
+
+#### Step 5: Workload Network Configuration
+
+The system auto-configures NSX Project and VPC settings:
+
+1. Review the default NSX Project and VPC
+2. Add DNS servers (e.g., `192.168.10.2`)
+3. Add NTP servers (e.g., `pool.ntp.org`)
+
+#### Step 6: Control Plane Size
+
+1. Select Control Plane VM size:
+   - **Tiny:** Development/testing
+   - **Small:** Small production
+   - **Medium/Large:** Production workloads
+
+2. Optionally provide an FQDN (must resolve to the first IP)
+
+3. **Export configuration** for future reference/redeployment
+
+#### Step 7: Review and Activate
+
+1. Review all settings
+2. Click **Activate** to start deployment
+3. Deployment takes **30-60 minutes**
+
+### Post-Activation: Content Library Setup
+
+After Supervisor activation completes:
+
+#### Step 1: Create Subscribed Content Library
+
+1. In vCenter, go to **Content Libraries**
+2. Click **Create**
+3. Select **Subscribed content library**
+4. Use subscription URL:
+   ```
+   https://wp-content.vmware.com/supervisor/v1/latest/lib.json
+   ```
+5. Complete the wizard
+
+#### Step 2: Associate Content Library with Supervisor
+
+1. Go to **Workload Management → Supervisors**
+2. Select your Supervisor
+3. Go to **Content Distribution** tab
+4. Click **Add Content Library**
+5. Select the subscribed content library
+
+#### Step 3: Apply Supervisor Updates
+
+1. Go to **Workload Management → Supervisors**
+2. Select your Supervisor
+3. Check the **Updates** tab
+4. Apply any available updates
+
+### Verification
+
+After Supervisor is active:
+
+```bash
+# Verify Supervisor Control Plane VMs are running
+# In vCenter: Look for 3 SupervisorControlPlaneVM VMs
+
+# Test kubectl access (from a workstation with kubectl installed)
+kubectl vsphere login --server=<supervisor-ip> -u administrator@vsphere.local
+
+# List namespaces
+kubectl get namespaces
+```
+
+### Common Issues
+
+#### "Live Patch cannot be performed" Error
+
+**Cause:** Live Patching is enabled on the cluster
+
+**Fix:** Disable Live Patching in cluster → Updates → Edit remediation settings
+
+#### "Admission check failed" Error
+
+**Cause:** vSphere HA admission control blocking Supervisor VMs
+
+**Fix:** Adjust HA admission control settings for small clusters
+
+#### Supervisor Stuck in "Configuring" State
+
+**Cause:** Various - check events and logs
+
+**Fix:**
+1. Check vCenter events for specific errors
+2. Verify network connectivity
+3. Ensure DNS resolves correctly
+4. Check NSX VPC is healthy
 
 ---
 

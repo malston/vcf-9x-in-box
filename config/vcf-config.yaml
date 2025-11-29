@@ -49,6 +49,8 @@ vcf_installer:
   # VCF Installer feature properties
   features:
     single_host_domain: true # Enable single-host domain support
+    vgl_29121_single_host_domain: true # VGL-29121: Additional single-host domain support
+    vsan_esa_disk_claim: true # VGL-43370: vSAN ESA SDDC managed disk claim
     skip_nic_speed_validation: true # Skip physical NIC speed validation
 
   # Software depot configuration

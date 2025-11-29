@@ -153,12 +153,21 @@ class VCFInstallerConfigurator:
         if vcf.get('features', {}).get('skip_nic_speed_validation', False):
             # Only add if not already present (idempotent)
             script += f"grep -q 'enable.speed.of.physical.nics.validation=false' {vcf_domain_config_file} || echo 'enable.speed.of.physical.nics.validation=false' >> {vcf_domain_config_file}\n"
+        if vcf.get('features', {}).get('vsan_esa_disk_claim', False):
+            # Only add if not already present (idempotent)
+            script += f"grep -q 'vsan.esa.sddc.managed.disk.claim=true' {vcf_domain_config_file} || echo 'vsan.esa.sddc.managed.disk.claim=true' >> {vcf_domain_config_file}\n"
 
         # Feature properties
         vcf_feature_config_file = "/home/vcf/feature.properties"
         if vcf.get('features', {}).get('single_host_domain', False):
             # Only add if not already present (idempotent)
             script += f"grep -q 'feature.vcf.internal.single.host.domain=true' {vcf_feature_config_file} 2>/dev/null || echo 'feature.vcf.internal.single.host.domain=true' >> {vcf_feature_config_file}\n"
+        if vcf.get('features', {}).get('vgl_29121_single_host_domain', False):
+            # Only add if not already present (idempotent)
+            script += f"grep -q 'feature.vcf.vgl-29121.single.host.domain=true' {vcf_feature_config_file} 2>/dev/null || echo 'feature.vcf.vgl-29121.single.host.domain=true' >> {vcf_feature_config_file}\n"
+        if vcf.get('features', {}).get('vsan_esa_disk_claim', False):
+            # Only add if not already present (idempotent)
+            script += f"grep -q 'feature.vcf.vgl-43370.vsan.esa.sddc.managed.disk.claim=true' {vcf_feature_config_file} 2>/dev/null || echo 'feature.vcf.vgl-43370.vsan.esa.sddc.managed.disk.claim=true' >> {vcf_feature_config_file}\n"
         script += f"chmod 755 {vcf_feature_config_file}\n"
 
         # Software depot configuration

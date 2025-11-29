@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "jinja2>=3.1.0",
+    "paramiko>=3.4.0",
     "pyyaml>=6.0",
     "pyvmomi>=8.0.0",
     "pytz>=2024.1",
@@ -24,6 +25,7 @@ validate-vcf-installer = "scripts.validate_vcf_installer_config:main"
 fix-vsan-policy = "scripts.fix_vsan_esa_default_storage_policy:main"
 fix-vsan-hcl-timestamp = "scripts.fix_vsan_hcl_timestamp:main"
 fix-vsan-hcl-bypass = "scripts.fix_vsan_hcl_bypass:main"
+fix-nsx-edge-amd = "scripts.fix_nsx_edge_amd_ryzen:main"
 
 [build-system]
 requires = ["hatchling"]

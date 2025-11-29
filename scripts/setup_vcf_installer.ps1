@@ -10,7 +10,7 @@ $SSHKeys = ""
 
 $VCFFeatureProperties = @{
     "feature.vcf.internal.single.host.domain" = "true"
-    "feature.vcf.vgl-29121.single.host.domain=" = "true"
+    "feature.vcf.vgl-29121.single.host.domain" = "true"
     "feature.vcf.vgl-43370.vsan.esa.sddc.managed.disk.claim" = "true"
 }
 

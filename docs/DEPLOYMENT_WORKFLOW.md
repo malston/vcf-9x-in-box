@@ -11,6 +11,7 @@ This guide explains the complete deployment workflow from generating kickstart c
 - [File Dependencies](#file-dependencies)
 - [NSX VPC Configuration (Post-Deployment)](#nsx-vpc-configuration-post-deployment)
 - [vSphere Supervisor Configuration](#vsphere-supervisor-configuration)
+- [Realtek Network Driver Installation](#realtek-network-driver-installation)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -1237,6 +1238,142 @@ kubectl get namespaces
 2. Verify network connectivity
 3. Ensure DNS resolves correctly
 4. Check NSX VPC is healthy
+
+---
+
+## Realtek Network Driver Installation
+
+The MS-A2 systems have a Realtek RTL8125 2.5GbE NIC that requires the VMware Fling driver to be recognized by ESXi.
+
+**Reference:** [William Lam's Realtek Network Driver Guide](https://williamlam.com/2025/11/realtek-network-driver-for-esxi.html)
+
+### Why Install This Driver?
+
+After installation, each MS-A2 will have 4 NICs available:
+
+| NIC | Driver | Speed | Description |
+|-----|--------|-------|-------------|
+| vmnic0 | cndi_igc | 2.5GbE | Intel I226-V |
+| vmnic1 | i40en | 10GbE | Intel X710 SFP+ (primary) |
+| vmnic2 | i40en | 10GbE | Intel X710 SFP+ (secondary) |
+| **vmnic3** | **if_re** | **2.5GbE** | **Realtek RTL8125** (requires driver) |
+
+### Supported Realtek Chips
+
+| Chip | Speed |
+|------|-------|
+| RTL8111 | 1GbE |
+| RTL8125 | 2.5GbE |
+| RTL8126 | 5GbE |
+| RTL8127 | 10GbE |
+
+### Prerequisites
+
+- ESXi 8.0 Update 3+ or ESXi 9.x
+- Download driver from [Broadcom Flings](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Realtek%20Network%20Driver%20for%20ESXi&release=1.101.01&os=&servicePk=&language=EN&freeDownloads=true)
+- Current version: `VMware-Re-Driver_1.101.01-5vmw.800.1.0.20613240.zip`
+
+### Installation Steps (Rolling Update)
+
+Perform a rolling update - one host at a time to avoid cluster downtime.
+
+#### Step 1: Copy Driver to All Hosts
+
+```bash
+# Copy driver to each host
+scp ~/Downloads/VMware-Re-Driver_1.101.01-5vmw.800.1.0.20613240.zip esx01:/tmp/
+scp ~/Downloads/VMware-Re-Driver_1.101.01-5vmw.800.1.0.20613240.zip esx02:/tmp/
+scp ~/Downloads/VMware-Re-Driver_1.101.01-5vmw.800.1.0.20613240.zip esx03:/tmp/
+```
+
+#### Step 2: Install on Each Host (One at a Time)
+
+For each host, repeat these steps:
+
+1. **Migrate VMs off the host** (see [vMotion Sidebar](#vmotion-sidebar) below)
+
+2. **Install the driver:**
+
+   ```bash
+   ssh esx01 "esxcli software component apply -d /tmp/VMware-Re-Driver_1.101.01-5vmw.800.1.0.20613240.zip"
+   ```
+
+3. **Reboot the host:**
+
+   ```bash
+   ssh esx01 "reboot"
+   ```
+
+4. **Re-enable SSH** after reboot (via DCUI or vCenter)
+
+5. **Verify vmnic3 is visible:**
+
+   ```bash
+   ssh esx01 "esxcli network nic list"
+   ```
+
+   You should see `vmnic3` with driver `if_re` and description `Realtek RTL8125`
+
+6. **Migrate VMs back** (optional - or proceed to next host)
+
+7. **Repeat for remaining hosts**
+
+### vMotion Sidebar
+
+> **How to Migrate VMs Before Host Reboot**
+>
+> Before rebooting a host, migrate running VMs to other hosts using vMotion:
+>
+> **Single VM:**
+> 1. In vCenter, navigate to the host
+> 2. Click the **VMs** tab
+> 3. Right-click the VM → **Migrate...**
+> 4. Select **"Change compute resource only"**
+> 5. Choose destination host (esx01, esx02, or esx03)
+> 6. Click **Next** through the wizard → **Finish**
+>
+> **Multiple VMs at once:**
+> 1. In the **VMs** tab, **Ctrl+click** (Cmd+click on Mac) to select multiple VMs
+> 2. Right-click → **Migrate...**
+> 3. Follow the same steps above
+> 4. vCenter will migrate them in parallel
+>
+> **Check for running VMs:**
+> ```bash
+> ssh esx01 "esxcli vm process list | grep 'Display Name:'"
+> ```
+
+### Verification
+
+After installing on all hosts:
+
+```bash
+# Check all hosts have vmnic3
+for host in esx01 esx02 esx03; do
+  echo "=== $host ==="
+  ssh $host "esxcli network nic list | grep vmnic3"
+done
+```
+
+Expected output for each host:
+```
+vmnic3  0000:03:00.0  if_re  Up  Down  0  Half  xx:xx:xx:xx:xx:xx  1500  Realtek Semiconductor Co., Ltd. RTL8125 2.5GbE Controller
+```
+
+### Limitations
+
+- Basic network connectivity only (no TSO, LRO, WOL hardware offload)
+- May not achieve full line rate under heavy load
+- This is a VMware Fling - community supported, not officially supported
+
+### Optional: Configure Jumbo Frames
+
+If you need 9000 MTU on the Realtek NIC:
+
+```bash
+ssh esx01 "esxcli system module parameters set -m if_re -p mtu=9000"
+ssh esx01 "reboot"
+```
 
 ---
 

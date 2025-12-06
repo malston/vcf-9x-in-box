@@ -4,13 +4,17 @@ ABOUTME: Detailed capacity audit for VCF 9.x management VMs.
 ABOUTME: Analyzes actual resource usage vs allocation to identify right-sizing opportunities.
 
 Usage:
-    vcf_capacity_audit.py               # Full audit report
-    vcf_capacity_audit.py --vm-name vc01    # Audit specific VM
-    vcf_capacity_audit.py --export-csv audit.csv  # Export to CSV
+    vcf_capacity_audit.py                        # Full audit report with cluster summary
+    vcf_capacity_audit.py --cluster-summary-only # Quick cluster capacity check
+    vcf_capacity_audit.py --vm-name vc01         # Audit specific VM
+    vcf_capacity_audit.py --export-csv audit.csv # Export to CSV
 
 Examples:
-    # Run full audit
+    # Run full audit with cluster capacity overview
     vcf_capacity_audit.py
+
+    # Quick cluster capacity check (fast)
+    vcf_capacity_audit.py --cluster-summary-only
 
     # Audit specific management VM
     vcf_capacity_audit.py --vm-name opsfm01
@@ -234,6 +238,150 @@ class VCFCapacityAuditor:
             "reason": f"Current allocation ({memory_allocated}GB) is appropriate for usage ({memory_usage_percent:.1f}%)",
         }
 
+    def _get_all_vms(self) -> List[vim.VirtualMachine]:
+        """Get all VMs from vCenter inventory."""
+        if not self.si:
+            raise RuntimeError("Not connected to vCenter")
+
+        content = self.si.RetrieveContent()
+        container = content.rootFolder
+        view_type = [vim.VirtualMachine]
+        recursive = True
+
+        container_view = content.viewManager.CreateContainerView(
+            container, view_type, recursive
+        )
+
+        vms = container_view.view
+        container_view.Destroy()
+
+        return vms
+
+    def get_cluster_capacity_summary(self) -> Dict:
+        """Get cluster-wide capacity summary including all VMs."""
+        # Build set of managed VM names from tier config
+        managed_vm_names = set()
+        for tier in self.config["tiers"].values():
+            for vm_config in tier["vms"]:
+                managed_vm_names.add(vm_config["name"])
+
+        # Get all VMs from vCenter
+        all_vms = self._get_all_vms()
+
+        # Categorize and collect stats
+        managed_running = {"count": 0, "memory_gb": 0.0, "vms": []}
+        other_running = {"count": 0, "memory_gb": 0.0, "vms": []}
+        other_powered_off = {"count": 0, "memory_gb": 0.0, "vms": []}
+
+        for vm in all_vms:
+            vm_name = vm.name
+            power_state = str(vm.summary.runtime.powerState)
+            memory_allocated_mb = vm.summary.config.memorySizeMB
+            memory_allocated_gb = round(memory_allocated_mb / 1024, 2)
+
+            vm_info = {
+                "name": vm_name,
+                "memory_gb": memory_allocated_gb,
+            }
+
+            if vm_name in managed_vm_names:
+                if power_state == "poweredOn":
+                    managed_running["count"] += 1
+                    managed_running["memory_gb"] += memory_allocated_gb
+                    managed_running["vms"].append(vm_info)
+            else:
+                if power_state == "poweredOn":
+                    other_running["count"] += 1
+                    other_running["memory_gb"] += memory_allocated_gb
+                    other_running["vms"].append(vm_info)
+                else:
+                    other_powered_off["count"] += 1
+                    other_powered_off["memory_gb"] += memory_allocated_gb
+                    other_powered_off["vms"].append(vm_info)
+
+        # Calculate totals
+        total_physical_ram_gb = self.config["homelab"]["total_physical_ram_gb"]
+        total_running_gb = managed_running["memory_gb"] + other_running["memory_gb"]
+        available_headroom_gb = total_physical_ram_gb - total_running_gb
+
+        return {
+            "total_physical_ram_gb": total_physical_ram_gb,
+            "managed_running": managed_running,
+            "other_running": other_running,
+            "other_powered_off": other_powered_off,
+            "total_running_gb": total_running_gb,
+            "available_headroom_gb": available_headroom_gb,
+        }
+
+    def display_cluster_capacity_summary(self, summary: Dict) -> None:
+        """Display cluster capacity summary."""
+        print("\n" + "=" * 80)
+        print("VCF Cluster Capacity Overview")
+        print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 80)
+
+        total_ram = summary["total_physical_ram_gb"]
+        print(f"\nPhysical Cluster Capacity: {total_ram} GB")
+
+        print(f"\nMemory Allocation by Category:")
+        print("─" * 80)
+
+        # Management VMs (Running)
+        mgmt = summary["managed_running"]
+        mgmt_pct = (mgmt["memory_gb"] / total_ram * 100) if total_ram > 0 else 0
+        print(f"  Management VMs (Running):      {mgmt['memory_gb']:>6.1f} GB   ({mgmt_pct:>5.1f}%)  [{mgmt['count']} VMs]")
+
+        # Other VMs (Running)
+        other_run = summary["other_running"]
+        other_run_pct = (other_run["memory_gb"] / total_ram * 100) if total_ram > 0 else 0
+        print(f"  Other VMs (Running):           {other_run['memory_gb']:>6.1f} GB   ({other_run_pct:>5.1f}%)  [{other_run['count']} VMs]")
+
+        # Other VMs (Powered Off)
+        other_off = summary["other_powered_off"]
+        other_off_pct = (other_off["memory_gb"] / total_ram * 100) if total_ram > 0 else 0
+        print(f"  Other VMs (Powered Off):       {other_off['memory_gb']:>6.1f} GB   ({other_off_pct:>5.1f}%)  [{other_off['count']} VMs]")
+
+        print("─" * 80)
+
+        # Total Running and Available
+        total_running = summary["total_running_gb"]
+        total_running_pct = (total_running / total_ram * 100) if total_ram > 0 else 0
+        total_running_count = mgmt["count"] + other_run["count"]
+        print(f"  Total Allocated (Running):     {total_running:>6.1f} GB   ({total_running_pct:>5.1f}%)  [{total_running_count} VMs]")
+
+        headroom = summary["available_headroom_gb"]
+        headroom_pct = (headroom / total_ram * 100) if total_ram > 0 else 0
+        print(f"  Available Headroom:            {headroom:>6.1f} GB   ({headroom_pct:>5.1f}%)")
+
+        # Capacity Status
+        print()
+        if total_running_pct >= 85:
+            print("Capacity Status: 🚨 CRITICAL - Low headroom available")
+        elif total_running_pct >= 70:
+            print("Capacity Status: ⚠ WARNING - Moderate headroom")
+        else:
+            print("Capacity Status: ✓ HEALTHY - Sufficient headroom available")
+
+        # List powered-off VMs if any exist
+        if other_off["count"] > 0:
+            print(f"\nPowered-Off VMs You Could Start:")
+
+            # Sort by memory (largest first)
+            sorted_vms = sorted(
+                other_off["vms"],
+                key=lambda x: x["memory_gb"],
+                reverse=True
+            )
+
+            for vm_info in sorted_vms:
+                vm_memory = vm_info["memory_gb"]
+                headroom_usage_pct = (vm_memory / headroom * 100) if headroom > 0 else float('inf')
+
+                if headroom > 0 and vm_memory <= headroom:
+                    print(f"  • {vm_info['name']} ({vm_memory:.1f} GB) - Would use {headroom_usage_pct:.0f}% of available headroom")
+                else:
+                    print(f"  • {vm_info['name']} ({vm_memory:.1f} GB) - ⚠ Exceeds available headroom")
+
     def audit_vm(self, vm_name: str, vm_config: Dict) -> None:
         """Audit a single VM and display detailed report."""
         print(f"\n{'=' * 80}")
@@ -416,6 +564,10 @@ class VCFCapacityAuditor:
             print("\n✓ No significant right-sizing opportunities found")
             print("  All management VMs are appropriately sized for their current usage")
 
+        # Add cluster capacity summary
+        cluster_summary = self.get_cluster_capacity_summary()
+        self.display_cluster_capacity_summary(cluster_summary)
+
         return all_stats
 
     def export_to_csv(self, stats: List[Dict], output_path: str) -> None:
@@ -490,6 +642,12 @@ def main():
         help="Export audit results to CSV file",
     )
 
+    parser.add_argument(
+        "--cluster-summary-only",
+        action="store_true",
+        help="Show only cluster capacity summary (fast)",
+    )
+
     args = parser.parse_args()
 
     # Create auditor instance
@@ -503,7 +661,12 @@ def main():
     try:
         auditor.connect_vcenter()
 
-        if args.vm_name:
+        if args.cluster_summary_only:
+            # Quick cluster capacity summary only
+            cluster_summary = auditor.get_cluster_capacity_summary()
+            auditor.display_cluster_capacity_summary(cluster_summary)
+
+        elif args.vm_name:
             # Audit specific VM
             vm_config = None
             for tier in auditor.config["tiers"].values():

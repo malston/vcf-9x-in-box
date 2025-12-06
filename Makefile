@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy fix-nsx-edge-amd fix-nsx-edge-amd-dryrun vcf-status vcf-validate vcf-capacity-audit vcf-power-down vcf-power-down-dryrun vcf-power-up vcf-power-up-dryrun vcf-power-down-unused vcf-power-up-all test lint format format-imports check-imports
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy fix-nsx-edge-amd fix-nsx-edge-amd-dryrun vcf-status vcf-validate vcf-capacity-audit vcf-cluster-capacity vcf-power-down vcf-power-down-dryrun vcf-power-up vcf-power-up-dryrun vcf-power-down-unused vcf-power-up-all test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -243,6 +243,10 @@ vcf-validate: sync ## Validate environment before power operations
 vcf-capacity-audit: sync ## Audit capacity usage of management VMs
 	@echo "$(GREEN)Running capacity audit...$(NC)"
 	@uv run scripts/vcf_capacity_audit.py $(if $(VM),--vm-name $(VM),) $(if $(CSV),--export-csv $(CSV),)
+
+vcf-cluster-capacity: sync ## Quick cluster capacity overview
+	@echo "$(GREEN)Checking cluster capacity...$(NC)"
+	@uv run scripts/vcf_capacity_audit.py --cluster-summary-only
 
 vcf-power-down: sync ## Power down management VMs (usage: make vcf-power-down TIER=tier3)
 	@if [ -z "$(TIER)" ]; then \

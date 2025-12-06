@@ -82,6 +82,7 @@ id_rsa.pub
 credentials.json
 .env
 .env.local
+.envrc
 
 # VCF secrets file (contains actual passwords)
 config/vcf-secrets.yaml

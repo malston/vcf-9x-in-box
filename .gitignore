@@ -152,5 +152,8 @@ VCF-*.ova
 .claude/
 SESSION_NOTES.md
 
+# Git worktrees
+.worktrees/
+
 # Backup files
 config/backups

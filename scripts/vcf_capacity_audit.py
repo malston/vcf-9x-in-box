@@ -270,7 +270,7 @@ class VCFCapacityAuditor:
 
         # Categorize and collect stats
         managed_running = {"count": 0, "memory_gb": 0.0, "vms": []}
-        other_running = {"count": 0, "memory_gb": 0.0, "vms": []}
+        other_running = {"count": 0, "memory_gb": 0.0, "vms": [], "resource_pools": {}}
         other_powered_off = {"count": 0, "memory_gb": 0.0, "vms": []}
 
         for vm in all_vms:
@@ -279,9 +279,21 @@ class VCFCapacityAuditor:
             memory_allocated_mb = vm.summary.config.memorySizeMB
             memory_allocated_gb = round(memory_allocated_mb / 1024, 2)
 
+            # Get resource pool name
+            resource_pool_name = "Default"
+            try:
+                if vm.resourcePool:
+                    rp_name = vm.resourcePool.name
+                    # Skip generic/root pool names
+                    if rp_name and rp_name not in ["Resources", "root"]:
+                        resource_pool_name = rp_name
+            except Exception:
+                pass  # Use default if we can't get resource pool
+
             vm_info = {
                 "name": vm_name,
                 "memory_gb": memory_allocated_gb,
+                "resource_pool": resource_pool_name,
             }
 
             if vm_name in managed_vm_names:
@@ -294,6 +306,15 @@ class VCFCapacityAuditor:
                     other_running["count"] += 1
                     other_running["memory_gb"] += memory_allocated_gb
                     other_running["vms"].append(vm_info)
+
+                    # Track by resource pool
+                    if resource_pool_name not in other_running["resource_pools"]:
+                        other_running["resource_pools"][resource_pool_name] = {
+                            "count": 0,
+                            "memory_gb": 0.0,
+                        }
+                    other_running["resource_pools"][resource_pool_name]["count"] += 1
+                    other_running["resource_pools"][resource_pool_name]["memory_gb"] += memory_allocated_gb
                 else:
                     other_powered_off["count"] += 1
                     other_powered_off["memory_gb"] += memory_allocated_gb
@@ -335,6 +356,12 @@ class VCFCapacityAuditor:
         other_run = summary["other_running"]
         other_run_pct = (other_run["memory_gb"] / total_ram * 100) if total_ram > 0 else 0
         print(f"  Other VMs (Running):           {other_run['memory_gb']:>6.1f} GB   ({other_run_pct:>5.1f}%)  [{other_run['count']} VMs]")
+
+        # Show resource pool breakdown for other running VMs
+        if other_run["resource_pools"]:
+            for pool_name in sorted(other_run["resource_pools"].keys()):
+                pool_data = other_run["resource_pools"][pool_name]
+                print(f"    ├─ {pool_name:<26} {pool_data['memory_gb']:>6.1f} GB              [{pool_data['count']} VMs]")
 
         # Other VMs (Powered Off)
         other_off = summary["other_powered_off"]

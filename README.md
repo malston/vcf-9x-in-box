@@ -10,6 +10,7 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 
 * [Changelog](#changelog)
 * [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+* [VCF Management VM Capacity Optimization](#vcf-management-vm-capacity-optimization) ⭐ **NEW**
 * [Deployment Workflow Guide](#deployment-workflow-guide)
 * [Secrets Management](#secrets-management)
 * [Using the Makefile](#using-the-makefile)
@@ -26,6 +27,17 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * [Blog References](#blog-references)
 
 ## Changelog
+
+* **12/04/25**
+  * **VCF Management VM Capacity Optimization:** Reclaim 20-30% of homelab capacity
+    * Created three-tier management strategy (Critical / Management-Only / Optional)
+    * Added `vcf_management_power.py` - Power management for VCF management VMs
+    * Added `vcf_capacity_audit.py` - Detailed capacity usage analysis and right-sizing recommendations
+    * Added Makefile targets: `vcf-status`, `vcf-capacity-audit`, `vcf-power-down`, `vcf-power-up`
+    * Added `config/vcf-management-tiers.yaml` - VM tier definitions
+    * Documentation: `docs/VCF_MANAGEMENT_CAPACITY.md` and quick reference guide
+    * Expected capacity reclaim: ~72GB (Tier 3 only) to ~140GB (combined approach)
+    * Homelab-specific right-sizing recommendations based on actual usage
 
 * **11/11/25**
   * **Secrets Management:** Implemented secure password handling system
@@ -96,6 +108,64 @@ Deploy a fully functional VMware Cloud Foundation (VCF) 9.x environment on a sin
 * When to run the vSAN policy fix script? (2-node only, immediately after deployment start)
 
 See the full FAQ for detailed answers and many more questions.
+
+## VCF Management VM Capacity Optimization
+
+⭐ **NEW:** Reclaim 20-30% of your homelab capacity by intelligently managing VCF 9.x management VMs.
+
+VCF 9.x deploys many management VMs (Operations, Automation, Monitoring, Logging) designed for large production environments. **In a 3-host homelab, many of these consume resources without being used.**
+
+### Quick Start
+
+```bash
+# 1. Check current management VM state
+export VCF_VCENTER_PASSWORD='VMware1!VMware1!'
+make vcf-status
+
+# 2. Audit capacity usage
+make vcf-capacity-audit
+
+# 3. Power down unused management VMs (~72GB reclaimed)
+make vcf-power-down-unused
+```
+
+### The Three-Tier Strategy
+
+**Tier 1: Critical Infrastructure (Always On)**
+- vCenter, NSX, SDDC Manager
+- Required for workloads to function
+
+**Tier 2: Management-Only (Power Down When Not Managing)**
+- VCF Operations Console, vROps
+- Only needed for Day-N management tasks
+
+**Tier 3: Optional Features (Safe to Power Down)**
+- VCF Automation (vRA) - if not using IaC
+- Identity Broker - if using local admin only
+- Operations Proxy, Logs, Networks - if not using features
+
+### Available Commands
+
+```bash
+make vcf-status                    # Show power state of all management VMs
+make vcf-capacity-audit            # Detailed capacity analysis
+make vcf-power-down TIER=tier3     # Power down specific tier
+make vcf-power-up TIER=all         # Power up all management
+make vcf-validate                  # Pre-flight checks
+```
+
+### Expected Capacity Reclaim
+
+| Action | RAM Reclaimed | % of 384GB Cluster |
+|--------|---------------|-------------------|
+| Power down Tier 3 | ~72 GB | ~19% |
+| Power down Tier 2+3 | ~120 GB | ~31% |
+| Right-size + Power down | ~140 GB | ~36% |
+
+### Documentation
+
+- **[Full Documentation](docs/VCF_MANAGEMENT_CAPACITY.md)** - Complete guide with troubleshooting
+- **[Quick Reference](docs/VCF_MANAGEMENT_CAPACITY_QUICKREF.md)** - Command cheat sheet
 
 ## Deployment Workflow Guide
 

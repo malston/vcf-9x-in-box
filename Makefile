@@ -1,4 +1,4 @@
-.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy fix-nsx-edge-amd fix-nsx-edge-amd-dryrun test lint format format-imports check-imports
+.PHONY: help setup sync install clean generate generate-all generate-host usb-create list-vms delete-all-vms delete-all-vms-dryrun cleanup-vcf cleanup-vcf-dryrun deploy-vcf-installer setup-vcf-installer fix-vsan-policy fix-nsx-edge-amd fix-nsx-edge-amd-dryrun vcf-status vcf-validate vcf-capacity-audit vcf-power-down vcf-power-down-dryrun vcf-power-up vcf-power-up-dryrun vcf-power-down-unused vcf-power-up-all test lint format format-imports check-imports
 
 # Default target
 .DEFAULT_GOAL := help
@@ -229,6 +229,74 @@ fix-nsx-edge-amd-dryrun: sync ## Preview NSX Edge AMD fix (dry run)
 	fi
 	@echo "$(YELLOW)Dry run: NSX Edge AMD Ryzen fix$(NC)"
 	@uv run scripts/fix_nsx_edge_amd_ryzen.py --dry-run --password '$(PASSWORD)' $(if $(EDGES),--edges $(EDGES),) $(if $(CONFIG),--config $(CONFIG),)
+
+##@ VCF Management Capacity
+
+vcf-status: sync ## Show power state of all VCF management VMs
+	@echo "$(GREEN)Checking VCF management VM status...$(NC)"
+	@uv run scripts/vcf_management_power.py status $(if $(TIER),$(TIER),)
+
+vcf-validate: sync ## Validate environment before power operations
+	@echo "$(GREEN)Validating VCF environment...$(NC)"
+	@uv run scripts/vcf_management_power.py validate
+
+vcf-capacity-audit: sync ## Audit capacity usage of management VMs
+	@echo "$(GREEN)Running capacity audit...$(NC)"
+	@uv run scripts/vcf_capacity_audit.py $(if $(VM),--vm-name $(VM),) $(if $(CSV),--export-csv $(CSV),)
+
+vcf-power-down: sync ## Power down management VMs (usage: make vcf-power-down TIER=tier3)
+	@if [ -z "$(TIER)" ]; then \
+		echo "$(RED)ERROR: TIER not specified$(NC)"; \
+		echo "Usage: make vcf-power-down TIER=tier3"; \
+		echo ""; \
+		echo "Available tiers:"; \
+		echo "  tier2 - Management-only components (VCF Operations Console, vROps)"; \
+		echo "  tier3 - Optional features (Automation, Identity Broker, etc.)"; \
+		echo "  all   - All management VMs (tier2 + tier3)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Powering down $(TIER) VMs...$(NC)"
+	@uv run scripts/vcf_management_power.py power-down $(TIER)
+
+vcf-power-down-dryrun: sync ## Preview power down operation (dry run)
+	@if [ -z "$(TIER)" ]; then \
+		echo "$(RED)ERROR: TIER not specified$(NC)"; \
+		echo "Usage: make vcf-power-down-dryrun TIER=tier3"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Dry run: Power down $(TIER) VMs$(NC)"
+	@uv run scripts/vcf_management_power.py --dry-run power-down $(TIER)
+
+vcf-power-up: sync ## Power up management VMs (usage: make vcf-power-up TIER=tier3)
+	@if [ -z "$(TIER)" ]; then \
+		echo "$(RED)ERROR: TIER not specified$(NC)"; \
+		echo "Usage: make vcf-power-up TIER=tier3"; \
+		echo ""; \
+		echo "Available tiers:"; \
+		echo "  tier2 - Management-only components"; \
+		echo "  tier3 - Optional features"; \
+		echo "  all   - All management VMs"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)Powering up $(TIER) VMs...$(NC)"
+	@uv run scripts/vcf_management_power.py power-up $(TIER)
+
+vcf-power-up-dryrun: sync ## Preview power up operation (dry run)
+	@if [ -z "$(TIER)" ]; then \
+		echo "$(RED)ERROR: TIER not specified$(NC)"; \
+		echo "Usage: make vcf-power-up-dryrun TIER=tier3"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Dry run: Power up $(TIER) VMs$(NC)"
+	@uv run scripts/vcf_management_power.py --dry-run power-up $(TIER)
+
+vcf-power-down-unused: sync ## Quick command: Power down all unused management VMs (tier3)
+	@echo "$(YELLOW)Powering down unused management VMs (Tier 3)...$(NC)"
+	@uv run scripts/vcf_management_power.py power-down tier3
+
+vcf-power-up-all: sync ## Quick command: Power up all management VMs
+	@echo "$(GREEN)Powering up all management VMs...$(NC)"
+	@uv run scripts/vcf_management_power.py power-up all
 
 ##@ Development
 

@@ -26,6 +26,8 @@ fix-vsan-policy = "scripts.fix_vsan_esa_default_storage_policy:main"
 fix-vsan-hcl-timestamp = "scripts.fix_vsan_hcl_timestamp:main"
 fix-vsan-hcl-bypass = "scripts.fix_vsan_hcl_bypass:main"
 fix-nsx-edge-amd = "scripts.fix_nsx_edge_amd_ryzen:main"
+vcf-management-power = "scripts.vcf_management_power:main"
+vcf-capacity-audit = "scripts.vcf_capacity_audit:main"
 
 [build-system]
 requires = ["hatchling"]

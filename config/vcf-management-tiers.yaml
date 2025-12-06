@@ -1,0 +1,157 @@
+# VCF 9.x Management VM Tier Configuration
+# This file defines which VCF management VMs can be safely powered down to reclaim capacity
+# and provides right-sizing recommendations for homelab environments.
+
+# vCenter connection details (from vcf-config.yaml)
+vcenter:
+  hostname: "vc01.vcf.lab"
+  username: "administrator@vsphere.local"
+  # Password can be provided via environment variable: VCF_VCENTER_PASSWORD
+  # or passed as command line argument
+
+# Management VM Tiers
+# - tier1: Critical infrastructure - must always run
+# - tier2: Management-only - can be powered down when not actively managing
+# - tier3: Optional features - safe to power down if not using features
+
+tiers:
+  tier1:
+    name: "Critical Infrastructure"
+    description: "VMs that must remain powered on for workloads to function"
+    power_management: false
+    vms:
+      - name: "vc01"
+        display_name: "vCenter Server"
+        hostname: "vc01.vcf.lab"
+        reason: "Core vSphere management, required for all operations"
+
+      - name: "nsx01a"
+        display_name: "NSX Manager"
+        hostname: "nsx01a.vcf.lab"
+        reason: "NSX unified appliance, manages overlay networking"
+        notes: "Accessible via VIP at https://nsx01.vcf.lab (172.30.0.15) and node IP 172.30.0.16"
+
+      - name: "edge01a"
+        display_name: "NSX Edge 1a"
+        hostname: "edge01a.vcf.lab"
+        reason: "Provides North-South routing for workloads"
+
+      - name: "edge01b"
+        display_name: "NSX Edge 1b"
+        hostname: "edge01b.vcf.lab"
+        reason: "Provides North-South routing for workloads"
+
+      - name: "sddcm01"
+        display_name: "SDDC Manager"
+        hostname: "sddcm01.vcf.lab"
+        reason: "Backend orchestration services required by NSX and vSAN"
+        notes: "UI is deprecated but backend services must run"
+
+  tier2:
+    name: "Management-Only Components"
+    description: "VMs used for Day-N management operations, can be powered down when not managing"
+    power_management: true
+    startup_order: 1  # Power up first when bringing management back online
+    vms:
+      - name: "vcf01"
+        display_name: "VCF Operations Console"
+        hostname: "vcf01.vcf.lab"
+        reason: "Primary management UI for VCF 9.x lifecycle operations"
+        estimated_ram_gb: 16
+        estimated_vcpu: 4
+        notes: "Replaces deprecated SDDC Manager UI, needed for patching and configuration changes"
+
+      - name: "opsfm01"
+        display_name: "VCF Operations (vROps)"
+        hostname: "opsfm01.vcf.lab"
+        reason: "Performance monitoring, capacity planning, and alerting"
+        estimated_ram_gb: 32
+        estimated_vcpu: 8
+        notes: "Consider right-sizing to 16GB for 3-host homelab if keeping powered on"
+        homelab_recommendation:
+          min_ram_gb: 16
+          min_vcpu: 4
+
+  tier3:
+    name: "Optional Features"
+    description: "VMs providing features not currently in use, safe to power down"
+    power_management: true
+    startup_order: 2  # Power up last (if needed)
+    vms:
+      - name: "auto01-6975g"
+        display_name: "VCF Automation (vRA/vRO)"
+        hostname: "auto01.vcf.lab"
+        reason: "Self-service catalog and automation workflows"
+        estimated_ram_gb: 32
+        estimated_vcpu: 8
+        notes: "Not needed unless using IaC or self-service provisioning. Actual observed usage: 87GB host memory (guest: 20GB) - HIGH PRIORITY for power-down to reclaim ~87GB. VM name has VCF-generated suffix."
+        features_provided:
+          - "Self-service VM catalog"
+          - "Infrastructure-as-Code automation"
+          - "Workflow orchestration"
+
+      - name: "opsproxy01"
+        display_name: "VCF Operations Proxy"
+        hostname: "opsproxy01.vcf.lab"
+        reason: "Cloud connectivity for VCF Operations"
+        estimated_ram_gb: 8
+        estimated_vcpu: 2
+        notes: "Not needed for air-gapped homelab"
+
+      # Identity Broker - not in initial VCF deployment, may be added later
+      - name: "idbroker01"
+        display_name: "Identity Broker"
+        hostname: "idbroker01.vcf.lab"
+        reason: "AD/LDAP integration for SSO"
+        estimated_ram_gb: 8
+        estimated_vcpu: 2
+        notes: "Not needed if using local admin accounts only"
+        optional: true  # May not exist in all deployments
+
+      # VCF Operations for Logs - not in initial VCF deployment, may be added later
+      - name: "opslog01"
+        display_name: "VCF Operations for Logs"
+        hostname: "opslog01.vcf.lab"
+        reason: "Centralized log aggregation and analysis"
+        estimated_ram_gb: 16
+        estimated_vcpu: 4
+        notes: "Not needed if using SSH or vCenter for log access"
+        optional: true
+
+      # VCF Operations for Networks - not in initial VCF deployment, may be added later
+      - name: "opsnet01"
+        display_name: "VCF Operations for Networks"
+        hostname: "opsnet01.vcf.lab"
+        reason: "Network insights and monitoring"
+        estimated_ram_gb: 8
+        estimated_vcpu: 2
+        notes: "NSX Manager UI provides similar functionality"
+        optional: true
+
+# Expected capacity reclaim from powering down Tier 3 VMs
+# Updated based on actual observed usage in Mark's environment (2024-12-04)
+capacity_estimate:
+  tier3_total_ram_gb: 87  # Primarily from auto01 which uses 87GB host memory
+  tier3_total_vcpu: 18
+  percentage_of_384gb_cluster: 22.66
+  notes: "auto01 alone accounts for ~87GB of this - single highest capacity target"
+
+# Homelab-specific recommendations
+homelab:
+  total_physical_ram_gb: 384  # 3x MS-A2 with 128GB each
+
+  # Conservative capacity planning
+  # Reserve capacity for ESXi overhead, vSAN cache, and management VMs
+  recommended_max_workload_allocation: 256  # Leave ~33% for overhead and management
+
+  # Right-sizing recommendations for VMs you want to keep running
+  right_sizing:
+    - vm: "opsfm01"
+      current_typical_allocation_gb: 32
+      recommended_homelab_gb: 16
+      notes: "VMware defaults assume 100+ hosts, 3-host homelab can run on half"
+
+    - vm: "vcf01"
+      current_typical_allocation_gb: 16
+      recommended_homelab_gb: 12
+      notes: "Console UI has light resource requirements for 3-host environment"
